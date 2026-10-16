@@ -78,11 +78,13 @@ Regras:
 
 ## Divisão da equipe (vertical slicing)
 
-| Pessoa | Responsabilidades |
-|---|---|
-| Pessoa 1 | CRUD de Autor, CRUD de Editora (CNPJ único), entidade Reserva e fila de espera |
-| Pessoa 2 | Setup do projeto, GlobalExceptionHandler, CRUD de Categoria, CRUD de Material (N:N com Autor) |
-| Pessoa 3 | CRUD de Empréstimo, devolução e regras RN01–RN05, Usuário, seed de dados e README |
+Equipe **Compila e Reza**:
+
+| Pessoa | Quem | Responsabilidades |
+|---|---|---|
+| Pessoa 1 | Pedro Affonso (@pedrohaffonso) | CRUD de Autor, CRUD de Editora (CNPJ único), entidade Reserva e fila de espera |
+| Pessoa 2 | João Pedro (@joaopmaia-code) | Setup do projeto, GlobalExceptionHandler, CRUD de Categoria, CRUD de Material (N:N com Autor), README inicial e documentação |
+| Pessoa 3 | Bárbara Tavares (@barbarattavares) | CRUD de Empréstimo, devolução e regras RN01–RN05, Usuário, seed de dados e README final |
 
 Cada pessoa mexe só nas próprias entidades; avisar no grupo antes de alterar uma
 entidade de outra pessoa.

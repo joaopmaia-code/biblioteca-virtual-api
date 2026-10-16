@@ -64,6 +64,34 @@ na Sprint 1, sem implementar nada das outras pessoas.
   espaços nas pontas; a collation do MySQL (`utf8mb4_0900_ai_ci`) também ignora acentos.
 - RN06 (não excluir categoria com materiais) fica para a Sprint 2, junto com Material.
 
+### Segunda parte (16/10/2026): Model de Material e documentação
+
+**Para que foi usada:** o trabalho foi dividido entre agentes do Claude Code rodando em
+paralelo, cada um com um arquivo e uma especificação fechada:
+
+| Agente | O que fez |
+|---|---|
+| Java | `TipoMaterial` (enum), `Material` (entidade, ligada a Categoria) e `MaterialRepository` |
+| SQL | `V21__create_materiais.sql` com FK para `categorias` |
+| README | `README.md`: execução, variáveis de ambiente, rotas, formato de erro, estrutura, equipe |
+| Requisitos | `docs/REQUISITOS.md`: versão em Markdown do planejamento (entidades, RF, RN, RNF, fila) |
+| Roadmap | `docs/ROADMAP.md`: planejamento das sprints por pessoa, folga, entrega e apresentação |
+
+A especificação de cada coluna (nome, tipo, `NULL`/`NOT NULL`) foi definida antes e passada
+igual aos agentes Java e SQL, para entidade e migration baterem. Os commits desta parte são
+feitos pelo próprio integrante, depois de revisar os arquivos.
+
+**Como foi verificado:**
+- Revisão manual da entidade contra a migration, campo a campo.
+- `./mvnw clean test` num banco descartável (`biblioteca_verificacao`, apagado depois), para
+  não registrar a V21 no banco de desenvolvimento antes do commit: V20 e V21 aplicadas,
+  `ddl-auto=validate` aceitou `Material`, 13 testes e 0 falhas.
+- `SHOW CREATE TABLE materiais`: colunas, tipos e a FK `fk_materiais_categoria` conferidos.
+- Documentos revisados contra o PDF; links entre `README.md` e `docs/` conferidos.
+
+**Decisões:** `anoPublicacao` e `quantidadeLicencas` obrigatórios (o PDF não os marca como
+opcionais); editora e autores ficam para a V22, porque dependem das tabelas da Pessoa 1.
+
 ---
 
 <!-- Pessoa 1 e Pessoa 3: adicionem suas seções abaixo, no mesmo formato. -->
