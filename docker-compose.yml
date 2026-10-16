@@ -1,0 +1,28 @@
+# Banco MySQL para desenvolvimento local.
+# Subir:  docker compose up -d
+# Parar:  docker compose down      (os dados ficam no volume mysql-data)
+# Zerar:  docker compose down -v   (apaga o volume e o Flyway recria tudo na próxima subida)
+name: biblioteca-virtual
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: biblioteca-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-biblioteca_virtual}
+      MYSQL_USER: ${DB_USERNAME:-biblioteca}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-biblioteca}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  mysql-data:
