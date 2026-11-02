@@ -94,4 +94,55 @@ opcionais); editora e autores ficam para a V22, porque dependem das tabelas da P
 
 ---
 
+## Pessoa 2 — Sprint 2/3 (02/11/2026): CRUD de Material e RN06
+
+### Ferramenta
+
+- **Claude Code**, modelo **Claude Opus 5.5**, na extensão do VS Code, usado como assistente de
+  programação. Os commits e o push são feitos pelo próprio integrante, depois de revisar os arquivos.
+
+### Como o trabalho foi conduzido
+
+O integrante comparou o andamento da `main` com o planejamento (PDF e ROADMAP) e definiu as
+prioridades da Sprint 2/3: o CRUD de Material, que estava atrasado e bloqueava Empréstimo e Reserva,
+e a RN06 na exclusão de Categoria. O escopo e as regras seguem o planejamento; o integrante revisou
+as decisões de implementação listadas no fim desta seção.
+
+### Para que a IA foi usada
+
+| Etapa | Uso da IA |
+|---|---|
+| Levantamento | Apoio na comparação entre o código da `main` e o planejamento |
+| Ambiente | Diagnóstico de dois problemas: o JDK 27 não compila o Lombok do projeto (instalado o JDK 21) e a porta 3306 estava ocupada por um MySQL do Windows (MySQL do Docker na 3307 via `DB_PORT`) |
+| Código | Geração da `V22`, das camadas de Material (entidade, repository, DTOs, service, controller), da anotação `@AnoNaoFuturo` e da checagem da RN06 |
+| Testes | Escrita de `MaterialServiceTest`, `MaterialRequestDTOTest` e dos testes novos de Categoria e do `GlobalExceptionHandler` |
+| Documentação | Atualização do README, REQUISITOS, ROADMAP, `CLAUDE.md` e rascunho deste registro |
+
+### Como o resultado foi verificado
+
+| O quê | Como | Resultado |
+|---|---|---|
+| Testes automatizados | `mvnw test` com JDK 21 e MySQL do `docker-compose` | 49 testes, 0 falhas (antes eram 30) |
+| Migration + `ddl-auto=validate` | `contextLoads` sobe a aplicação inteira | V22 aplicada; Hibernate aceitou a entidade com editora e autores |
+| Rotas de Material | Requisições com `curl` contra a aplicação rodando (corpos em arquivos UTF-8) | 201/200/204 nos fluxos normais; autores voltam em ordem alfabética; ID de autor repetido é ignorado; `PUT` troca os autores e remove a editora |
+| Erros de Material | Mesmas requisições com dados errados | 400 (corpo vazio, ano futuro, URL inválida, 0 licenças, 0 páginas, lista de autores vazia, tipo `REVISTA`, id `abc`); 404 (categoria, editora, autores 9998 e 9999 inexistentes, material inexistente) |
+| RN06 | `DELETE` de categoria e autor ligados a material | Categoria: 409 com a mensagem da regra; autor: 409 pela rede de segurança (antes seria 500); depois de excluir os materiais, as exclusões deram 204 |
+| Swagger | `/swagger-ui.html` e `/v3/api-docs` | 5 rotas na tag *Materiais* com 200/201/204, 400 e 404; `DELETE /categorias/{id}` com 409 |
+
+### Decisões que o integrante revisou e precisa saber explicar
+
+- **Por que IDs no corpo** (`categoriaId`, `editoraId`, `autoresIds`) e não objetos: o cliente só referencia
+  cadastros que já existem; o Service busca cada um e devolve 404 se não achar.
+- **Autores numa consulta só** (`findAllById`): se o tamanho do resultado for diferente do número de IDs, algum
+  não existe, e a mensagem diz qual.
+- **`Set<Autor>`** na entidade, porque a chave primária de `material_autor` não aceita o mesmo autor duas vezes.
+- **`@EntityGraph` na listagem**: traz categoria, editora e autores na mesma consulta, em vez de uma consulta por
+  material (problema N+1), já que as relações são LAZY e `open-in-view=false`.
+- **`@AnoNaoFuturo`**: o `@Max` só aceita valor fixo; o validador compara com `Year.now()` a cada requisição.
+- **Rede de segurança 409**: os Services de Autor e Editora (Pessoa 1) ainda não checam a RN06; até checarem,
+  o banco recusa a exclusão e o `GlobalExceptionHandler` devolve 409 em vez de 500. As consultas
+  `existsByAutoresId` e `existsByEditoraId` já estão no `MaterialRepository` para a Pessoa 1 usar.
+
+---
+
 <!-- Pessoa 1 e Pessoa 3: adicionem suas seções abaixo, no mesmo formato. -->

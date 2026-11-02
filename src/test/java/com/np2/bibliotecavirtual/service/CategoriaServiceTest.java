@@ -7,6 +7,7 @@ import com.np2.bibliotecavirtual.exception.RegraNegocioException;
 import com.np2.bibliotecavirtual.model.Categoria;
 import com.np2.bibliotecavirtual.model.SerieRecomendada;
 import com.np2.bibliotecavirtual.repository.CategoriaRepository;
+import com.np2.bibliotecavirtual.repository.MaterialRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -30,6 +31,9 @@ class CategoriaServiceTest {
 
     @Mock
     private CategoriaRepository categoriaRepository;
+
+    @Mock
+    private MaterialRepository materialRepository;
 
     @InjectMocks
     private CategoriaService categoriaService;
@@ -101,6 +105,28 @@ class CategoriaServiceTest {
         assertThatThrownBy(() -> categoriaService.excluir(99L))
                 .isInstanceOf(RecursoNaoEncontradoException.class);
         verify(categoriaRepository, never()).delete(any());
+    }
+
+    @Test
+    void excluirCategoriaComMateriaisLancaRegraNegocioENaoExclui() {
+        when(categoriaRepository.findById(1L)).thenReturn(Optional.of(categoriaComId(1L, "Matemática")));
+        when(materialRepository.existsByCategoriaId(1L)).thenReturn(true);
+
+        assertThatThrownBy(() -> categoriaService.excluir(1L))
+                .isInstanceOf(RegraNegocioException.class)
+                .hasMessage("Não é possível excluir a categoria 'Matemática': existem materiais vinculados a ela");
+        verify(categoriaRepository, never()).delete(any());
+    }
+
+    @Test
+    void excluirCategoriaSemMateriaisExclui() {
+        Categoria categoria = categoriaComId(1L, "Matemática");
+        when(categoriaRepository.findById(1L)).thenReturn(Optional.of(categoria));
+        when(materialRepository.existsByCategoriaId(1L)).thenReturn(false);
+
+        categoriaService.excluir(1L);
+
+        verify(categoriaRepository).delete(categoria);
     }
 
     private Categoria categoriaComId(Long id, String nome) {

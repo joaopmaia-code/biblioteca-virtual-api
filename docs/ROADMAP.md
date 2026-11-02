@@ -37,11 +37,11 @@ Meta: setup e todos os Models na `main` até sábado, 17/10.
 - [ ] CRUD completo de Editora
 
 ### Pessoa 2 — João Pedro
-- [ ] Setup do projeto (Spring, banco, Flyway, Swagger)
-- [ ] Repositório, README inicial e documentação
-- [ ] Model + migration de Categoria e Material
-- [ ] GlobalExceptionHandler
-- [ ] CRUD completo de Categoria
+- [x] Setup do projeto (Spring, banco, Flyway, Swagger)
+- [x] Repositório, README inicial e documentação
+- [x] Model + migration de Categoria e Material
+- [x] GlobalExceptionHandler
+- [x] CRUD completo de Categoria
 
 ### Pessoa 3 — Bárbara Tavares
 - [ ] Model + migration de Empréstimo e Reserva
@@ -59,8 +59,8 @@ Meta: setup e todos os Models na `main` até sábado, 17/10.
 - [ ] Regras RN08–RN10
 
 ### Pessoa 2 — João Pedro
-- [ ] CRUD de Material (N:N com Autor)
-- [ ] Revisar validações e Swagger
+- [x] CRUD de Material (N:N com Autor)
+- [x] Revisar validações e Swagger
 
 ### Pessoa 3 — Bárbara Tavares
 - [ ] CRUD completo de Empréstimo

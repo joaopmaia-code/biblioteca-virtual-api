@@ -17,7 +17,7 @@ Repositório: https://github.com/joaopmaia-code/biblioteca-virtual-api
 
 | Tecnologia | Uso |
 |---|---|
-| Java 17+ | Linguagem (código compilado para Java 17) |
+| Java 17 ou 21 | Linguagem (código compilado para Java 17) |
 | Spring Boot 3.5.16 | Base da aplicação |
 | Spring Web | API REST |
 | Spring Data JPA | Repositories e persistência (Hibernate) |
@@ -30,7 +30,9 @@ Repositório: https://github.com/joaopmaia-code/biblioteca-virtual-api
 
 ## Pré-requisitos
 
-- **JDK 17 ou superior** (`java -version` para conferir)
+- **JDK 17 ou 21** (`java -version` para conferir). Um JDK mais novo, como o 27, não compila o projeto:
+  o Lombok da versão do Spring Boot usada aqui falha com `ExceptionInInitializerError`. Se tiver mais de um JDK,
+  aponte o `JAVA_HOME` para o 17 ou o 21.
 - **Docker Desktop** rodando
 - **Git**
 
@@ -78,6 +80,23 @@ Para usar outras credenciais, copie o `.env.example` para `.env` e ajuste. O `do
 para a aplicação, exporte as mesmas variáveis no terminal ou na configuração de execução da IDE.
 O `.env` está no `.gitignore` e não vai para o Git.
 
+**Porta 3306 ocupada** (ex.: MySQL instalado no Windows): o `docker compose up -d` falha com
+"ports are not available". Use outra porta nos dois comandos, sem mudar nenhum arquivo:
+
+```powershell
+# PowerShell
+$env:DB_PORT = "3307"
+docker compose up -d
+.\mvnw.cmd spring-boot:run
+```
+
+```bash
+# Git Bash / Linux / macOS
+export DB_PORT=3307
+docker compose up -d
+./mvnw spring-boot:run
+```
+
 ## Testes
 
 ```bash
@@ -89,23 +108,73 @@ migrations e que o Hibernate (`ddl-auto=validate`) aceita o schema.
 
 ## Rotas da API
 
-### Implementadas (Sprint 1 – PR #2)
+### Implementadas
 
-| Método | Rota | Sucesso | Erros possíveis |
-|---|---|---|---|
-| POST | `/categorias` | 201 Created (com `Location`) | 400, 409 |
-| GET | `/categorias` | 200 OK (ordenado por nome) | — |
-| GET | `/categorias/{id}` | 200 OK | 400, 404 |
-| PUT | `/categorias/{id}` | 200 OK | 400, 404, 409 |
-| DELETE | `/categorias/{id}` | 204 No Content | 400, 404 |
+Em todas: `POST` devolve **201 Created** com o cabeçalho `Location`, `GET` e `PUT` devolvem **200 OK**,
+`DELETE` devolve **204 No Content**, e um ID que não é número (ex.: `/materiais/abc`) devolve **400**.
+
+**Categorias** (Pessoa 2)
+
+| Método | Rota | Erros possíveis |
+|---|---|---|
+| POST | `/categorias` | 400, 409 (nome repetido) |
+| GET | `/categorias` (ordenado por nome) | — |
+| GET | `/categorias/{id}` | 404 |
+| PUT | `/categorias/{id}` | 400, 404, 409 (nome repetido) |
+| DELETE | `/categorias/{id}` | 404, 409 (tem materiais vinculados – RN06) |
+
+**Materiais** (Pessoa 2)
+
+| Método | Rota | Erros possíveis |
+|---|---|---|
+| POST | `/materiais` | 400, 404 (categoria, editora ou autor inexistente) |
+| GET | `/materiais` (ordenado por título) | — |
+| GET | `/materiais/{id}` | 404 |
+| PUT | `/materiais/{id}` | 400, 404 |
+| DELETE | `/materiais/{id}` | 404 |
+
+Categoria e autores (pelo menos um) são obrigatórios e a editora é opcional. Todos são enviados pelo ID
+(`categoriaId`, `editoraId`, `autoresIds`) e voltam na resposta resumidos com `id` e `nome`. Exemplo de corpo:
+
+```json
+{
+  "titulo": "Dom Casmurro",
+  "tipo": "LIVRO",
+  "anoPublicacao": 1899,
+  "sinopse": "Bentinho narra sua história com Capitu.",
+  "urlArquivo": "https://acervo.escola.edu.br/livros/dom-casmurro.pdf",
+  "numeroPaginas": 256,
+  "quantidadeLicencas": 3,
+  "categoriaId": 1,
+  "editoraId": 1,
+  "autoresIds": [1, 2]
+}
+```
+
+**Autores** (Pessoa 1)
+
+| Método | Rota | Erros possíveis |
+|---|---|---|
+| POST | `/autores` | 400 |
+| GET | `/autores` (ordenado por nome) | — |
+| GET | `/autores/{id}` | 404 |
+| PUT | `/autores/{id}` | 400, 404 |
+| DELETE | `/autores/{id}` | 404 |
+
+**Editoras** (Pessoa 1)
+
+| Método | Rota | Erros possíveis |
+|---|---|---|
+| POST | `/editoras` | 400, 409 (CNPJ repetido) |
+| GET | `/editoras` (ordenado por nome) | — |
+| GET | `/editoras/{id}` | 404 |
+| PUT | `/editoras/{id}` | 400, 404, 409 (CNPJ repetido) |
+| DELETE | `/editoras/{id}` | 404 |
 
 ### Planejadas
 
 | Rota | Descrição | Responsável |
 |---|---|---|
-| `/autores` | CRUD de Autor | Pessoa 1 |
-| `/editoras` | CRUD de Editora (CNPJ único) | Pessoa 1 |
-| `/materiais` | CRUD de Material (N:N com Autor) | Pessoa 2 |
 | `/emprestimos` | CRUD de Empréstimo e devolução | Pessoa 3 |
 | `POST /materiais/{id}/reservas` | Entrar na fila de espera | Pessoa 1 |
 | `GET /materiais/{id}/fila` | Ver a fila do material com posições | Pessoa 1 |
@@ -144,6 +213,9 @@ Exemplo de **400** (validação):
 **404** indica um ID que não existe (ex.: `"Categoria não encontrada com id 99"`) e **409** indica uma regra de negócio
 violada (ex.: `"Já existe uma categoria com o nome 'Matemática'"`), ambos sem o campo `campos`.
 
+Se o banco recusar uma operação por constraint (ex.: excluir um registro que outra tabela ainda usa) sem que o Service
+tenha checado antes, o `GlobalExceptionHandler` também devolve **409**, com uma mensagem genérica, em vez de erro 500.
+
 ## Estrutura do projeto
 
 ```
@@ -155,7 +227,8 @@ biblioteca-virtual-api/
 │   ├── exception/     # Exceções de negócio e GlobalExceptionHandler
 │   ├── model/         # Entidades JPA e enums
 │   ├── repository/    # Interfaces Spring Data JPA
-│   └── service/       # Regras de negócio
+│   ├── service/       # Regras de negócio
+│   └── validacao/     # Anotações de validação próprias (ex.: @AnoNaoFuturo)
 ├── src/main/resources/
 │   ├── application.properties   # Banco, JPA, Flyway e Swagger
 │   └── db/migration/            # Migrations do Flyway (V<n>__descricao.sql)

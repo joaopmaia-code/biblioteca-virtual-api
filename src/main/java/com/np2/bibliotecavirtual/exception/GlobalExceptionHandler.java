@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.np2.bibliotecavirtual.dto.CampoErroDTO;
 import com.np2.bibliotecavirtual.dto.ErroResponseDTO;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -35,6 +36,17 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(RegraNegocioException.class)
     public ResponseEntity<ErroResponseDTO> tratarRegraNegocio(RegraNegocioException ex) {
         return responder(ErroResponseDTO.de(HttpStatus.CONFLICT, ex.getMessage()));
+    }
+
+    /**
+     * O banco recusou a operação por uma constraint (ex.: excluir registro que ainda é usado
+     * por outra tabela) → 409. Rede de segurança: o normal é o Service checar antes e lançar
+     * RegraNegocioException com uma mensagem mais específica.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErroResponseDTO> tratarIntegridadeDados(DataIntegrityViolationException ex) {
+        return responder(ErroResponseDTO.de(HttpStatus.CONFLICT,
+                "A operação não pode ser concluída porque o registro está vinculado a outros cadastros ou repete um valor único"));
     }
 
     /** Falha no @Valid do corpo da requisição → 400 com a mensagem de cada campo. */

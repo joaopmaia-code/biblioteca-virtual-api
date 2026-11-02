@@ -6,6 +6,7 @@ import com.np2.bibliotecavirtual.exception.RecursoNaoEncontradoException;
 import com.np2.bibliotecavirtual.exception.RegraNegocioException;
 import com.np2.bibliotecavirtual.model.Categoria;
 import com.np2.bibliotecavirtual.repository.CategoriaRepository;
+import com.np2.bibliotecavirtual.repository.MaterialRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ import java.util.List;
 public class CategoriaService {
 
     private final CategoriaRepository categoriaRepository;
+    private final MaterialRepository materialRepository;
 
     @Transactional
     public CategoriaResponseDTO cadastrar(CategoriaRequestDTO dto) {
@@ -59,6 +61,13 @@ public class CategoriaService {
     @Transactional
     public void excluir(Long id) {
         Categoria categoria = buscarCategoria(id);
+
+        // RN06: não excluir categoria que ainda classifica materiais.
+        if (materialRepository.existsByCategoriaId(id)) {
+            throw new RegraNegocioException("Não é possível excluir a categoria '" + categoria.getNome()
+                    + "': existem materiais vinculados a ela");
+        }
+
         categoriaRepository.delete(categoria);
     }
 

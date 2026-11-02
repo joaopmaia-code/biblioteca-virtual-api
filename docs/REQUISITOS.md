@@ -60,8 +60,14 @@ responder pelo colega.
   opcionais estão marcados explicitamente como "opcional" e este não está.
 - **Material:** pelo mesmo critério, `anoPublicacao` e `quantidadeLicencas` são obrigatórios
   (`NOT NULL`). A tabela foi criada na `V21` só com a ligação a Categoria; `editora_id` e a
-  tabela `material_autor` entram numa `V22`, quando as tabelas `editoras` e `autores`
-  (Pessoa 1) existirem.
+  tabela `material_autor` entraram na `V22`, depois que as tabelas `editoras` e `autores`
+  (Pessoa 1) chegaram na `main`.
+- **Material – autores:** "um ou mais autores" (RF02), então `autoresIds` não pode ser vazio. IDs repetidos
+  na lista são ignorados, e um ID que não existe devolve 404 dizendo qual faltou.
+- **Material – ano:** "até o ano atual" é checado pela anotação própria `@AnoNaoFuturo`, porque o `@Max`
+  só aceita um número fixo.
+- **RN06:** o Service checa antes de excluir e devolve 409 com a mensagem da regra. Como rede de segurança,
+  qualquer recusa do banco por constraint (`DataIntegrityViolationException`) também vira 409.
 
 **Em aberto:**
 - Valor de RN02 (prazo padrão de empréstimo; sugestão: 14 dias)
