@@ -97,12 +97,14 @@ public class CategoriaController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Excluir categoria")
+    @Operation(summary = "Excluir categoria", description = "Não é permitido excluir categoria com materiais vinculados (RN06).")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Categoria excluída"),
             @ApiResponse(responseCode = "400", description = "ID em formato inválido",
                     content = @Content(schema = @Schema(implementation = ErroResponseDTO.class))),
             @ApiResponse(responseCode = "404", description = "Categoria não encontrada",
+                    content = @Content(schema = @Schema(implementation = ErroResponseDTO.class))),
+            @ApiResponse(responseCode = "409", description = "Categoria possui materiais vinculados",
                     content = @Content(schema = @Schema(implementation = ErroResponseDTO.class)))
     })
     public ResponseEntity<Void> excluir(

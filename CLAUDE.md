@@ -9,7 +9,7 @@ dúvida, ele é a fonte da verdade.
 API REST (sem interface visual) de uma biblioteca virtual de escola de ensino médio,
 feita por 3 pessoas. Entrega e apresentação até 06/11/2026.
 
-- Java 17+ (código compilado com `java.version=17`), Spring Boot 3.5, Maven (wrapper `mvnw`)
+- Java 17 ou 21 (código compilado com `java.version=17`; JDK mais novo quebra o Lombok), Spring Boot 3.5, Maven (wrapper `mvnw`)
 - Spring Web, Spring Data JPA, Bean Validation, Flyway (+ `flyway-mysql`), MySQL 8.4, Lombok
 - Swagger com springdoc-openapi em `/swagger-ui.html`
 - Pacote base: `com.np2.bibliotecavirtual`
@@ -37,12 +37,16 @@ Credenciais do banco vêm das variáveis `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_US
 | `controller` | `@RestController`; `@Valid` no corpo; define status HTTP; documentação Swagger |
 | `exception` | Exceções de negócio e `GlobalExceptionHandler` (`@RestControllerAdvice`) |
 | `config` | Configurações (ex.: `OpenApiConfig`) |
+| `validacao` | Anotações de Bean Validation próprias (ex.: `@AnoNaoFuturo`) |
 
 Regras:
 - Controller nunca acessa Repository direto e nunca recebe/devolve entidade; sempre DTO.
 - Service lança `RecursoNaoEncontradoException` (404) e `RegraNegocioException` (409);
   o `GlobalExceptionHandler` transforma em resposta de erro padrão
   (`timestamp`, `status`, `erro`, `mensagem`, `campos`). Validação inválida vira 400.
+  `DataIntegrityViolationException` (constraint do banco) também vira 409, como rede de segurança.
+- RN06: não excluir categoria, editora ou autor usados por material. O Service checa com
+  `MaterialRepository.existsByCategoriaId` / `existsByEditoraId` / `existsByAutoresId` e lança 409.
 - Unicidade (CNPJ da editora, nome da categoria): constraint `UNIQUE` na migration **e**
   checagem `existsBy...` no Service retornando 409.
 - Toda rota tem `@Operation` e `@ApiResponses` no Swagger.

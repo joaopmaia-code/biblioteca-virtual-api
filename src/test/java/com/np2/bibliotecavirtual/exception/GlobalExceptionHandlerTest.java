@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -52,6 +53,15 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.erro").value("Conflict"))
                 .andExpect(jsonPath("$.mensagem").value("Já existe um registro com esse nome"));
+    }
+
+    @Test
+    void violacaoDeIntegridadeDoBancoRetorna409() throws Exception {
+        mockMvc.perform(get("/teste/integridade"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.mensagem").value(
+                        "A operação não pode ser concluída porque o registro está vinculado a outros cadastros ou repete um valor único"));
     }
 
     @Test
@@ -112,6 +122,11 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/teste/regra-negocio")
         void regraNegocio() {
             throw new RegraNegocioException("Já existe um registro com esse nome");
+        }
+
+        @GetMapping("/teste/integridade")
+        void integridade() {
+            throw new DataIntegrityViolationException("Cannot delete or update a parent row: a foreign key constraint fails");
         }
 
         @PostMapping("/teste/validacao")
