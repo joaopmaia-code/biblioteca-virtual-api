@@ -117,6 +117,8 @@ as decisões de implementação listadas no fim desta seção.
 | Código | Geração da `V22`, das camadas de Material (entidade, repository, DTOs, service, controller), da anotação `@AnoNaoFuturo` e da checagem da RN06 |
 | Testes | Escrita de `MaterialServiceTest`, `MaterialRequestDTOTest` e dos testes novos de Categoria e do `GlobalExceptionHandler` |
 | Documentação | Atualização do README, REQUISITOS, ROADMAP, `CLAUDE.md` e rascunho deste registro |
+| Tratamento de erros (branch `joao-dev`) | Ampliação do `GlobalExceptionHandler` para 404 de rota inexistente, 405, 415 e 500 no formato padrão, com testes |
+| Acompanhamento | Rascunho do `docs/SPRINTS.md` a partir do histórico do Git (datas e PRs); as partes das outras pessoas ficaram para elas preencherem |
 
 ### Como o resultado foi verificado
 
@@ -128,6 +130,7 @@ as decisões de implementação listadas no fim desta seção.
 | Erros de Material | Mesmas requisições com dados errados | 400 (corpo vazio, ano futuro, URL inválida, 0 licenças, 0 páginas, lista de autores vazia, tipo `REVISTA`, id `abc`); 404 (categoria, editora, autores 9998 e 9999 inexistentes, material inexistente) |
 | RN06 | `DELETE` de categoria e autor ligados a material | Categoria: 409 com a mensagem da regra; autor: 409 pela rede de segurança (antes seria 500); depois de excluir os materiais, as exclusões deram 204 |
 | Swagger | `/swagger-ui.html` e `/v3/api-docs` | 5 rotas na tag *Materiais* com 200/201/204, 400 e 404; `DELETE /categorias/{id}` com 409 |
+| Erros novos (`joao-dev`) | `GlobalExceptionHandlerTest` (11 testes) e `curl` contra a aplicação rodando | `GET /materiaisss` → 404, `PATCH /categorias/1` → 405 com os métodos aceitos, corpo `text/plain` → 415, todos no formato padrão; rotas normais e Swagger sem mudança |
 
 ### Decisões que o integrante revisou e precisa saber explicar
 

@@ -132,4 +132,5 @@ O ZIP vai para o Moodle até 06/11 e o sistema precisa estar rodando no início 
 5. **Rodar o projeto e testar no Swagger** antes de abrir o Pull Request.
 
 Durante o projeto, cada sprint terá um registro do que cada um fez, das dificuldades e do
-próximo passo, para os acompanhamentos com o professor e a descrição das contribuições.
+próximo passo, para os acompanhamentos com o professor e a descrição das contribuições:
+[SPRINTS.md](SPRINTS.md).
