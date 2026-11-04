@@ -45,6 +45,8 @@ Regras:
   o `GlobalExceptionHandler` transforma em resposta de erro padrão
   (`timestamp`, `status`, `erro`, `mensagem`, `campos`). Validação inválida vira 400.
   `DataIntegrityViolationException` (constraint do banco) também vira 409, como rede de segurança.
+  Rota inexistente (404), método não aceito (405), corpo que não é JSON (415) e erro inesperado (500,
+  sem detalhes internos) também saem no formato padrão.
 - RN06: não excluir categoria, editora ou autor usados por material. O Service checa com
   `MaterialRepository.existsByCategoriaId` / `existsByEditoraId` / `existsByAutoresId` e lança 409.
 - Unicidade (CNPJ da editora, nome da categoria): constraint `UNIQUE` na migration **e**

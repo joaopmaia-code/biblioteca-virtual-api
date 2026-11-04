@@ -216,6 +216,15 @@ violada (ex.: `"Já existe uma categoria com o nome 'Matemática'"`), ambos sem 
 Se o banco recusar uma operação por constraint (ex.: excluir um registro que outra tabela ainda usa) sem que o Service
 tenha checado antes, o `GlobalExceptionHandler` também devolve **409**, com uma mensagem genérica, em vez de erro 500.
 
+Os demais erros também seguem o mesmo formato:
+
+| Status | Quando |
+|---|---|
+| 404 | Rota que não existe (ex.: `GET /materiaisss`) |
+| 405 | Rota existe, mas não com esse método (ex.: `PATCH /categorias/1`); a mensagem lista os métodos aceitos |
+| 415 | Corpo enviado em outro formato que não `application/json` |
+| 500 | Erro inesperado; a resposta não expõe detalhes internos e o erro completo fica no log da aplicação |
+
 ## Estrutura do projeto
 
 ```
@@ -275,5 +284,6 @@ biblioteca-virtual-api/
 
 - [Requisitos](docs/REQUISITOS.md)
 - [Roadmap](docs/ROADMAP.md)
+- [Acompanhamento das sprints](docs/SPRINTS.md) (o que cada um entregou, dificuldades e próximo passo)
 - [Registro do uso de IA](docs/USO_DE_IA.md)
 - [Planejamento completo (PDF)](docs/NP2%20%E2%80%93%20Biblioteca%20Virtual%20Planejamento%20Completo.pdf)

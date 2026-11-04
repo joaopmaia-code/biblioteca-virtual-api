@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -104,6 +105,40 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.mensagem").value("O parâmetro 'id' recebeu o valor 'abc', que não é válido"));
     }
 
+    @Test
+    void rotaInexistenteRetorna404NoFormatoPadrao() throws Exception {
+        mockMvc.perform(get("/teste/rota-que-nao-existe"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.mensagem").value("Rota não encontrada: GET /teste/rota-que-nao-existe"));
+    }
+
+    @Test
+    void metodoNaoPermitidoRetorna405() throws Exception {
+        mockMvc.perform(patch("/teste/id/1"))
+                .andExpect(status().isMethodNotAllowed())
+                .andExpect(jsonPath("$.status").value(405))
+                .andExpect(jsonPath("$.mensagem").value("O método PATCH não é aceito nesta rota. Métodos aceitos: [GET]"));
+    }
+
+    @Test
+    void corpoQueNaoEJsonRetorna415() throws Exception {
+        mockMvc.perform(post("/teste/validacao")
+                        .contentType(MediaType.TEXT_PLAIN)
+                        .content("nome=Teste"))
+                .andExpect(status().isUnsupportedMediaType())
+                .andExpect(jsonPath("$.status").value(415))
+                .andExpect(jsonPath("$.mensagem").value("O formato 'text/plain' não é aceito. Envie o corpo como application/json"));
+    }
+
+    @Test
+    void erroInesperadoRetorna500SemDetalhesInternos() throws Exception {
+        mockMvc.perform(get("/teste/erro-inesperado"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.status").value(500))
+                .andExpect(jsonPath("$.mensagem").value("Erro interno inesperado. Tente novamente; se continuar, avise a equipe"));
+    }
+
     enum Cor { AZUL, VERDE }
 
     record EntradaDeTeste(
@@ -122,6 +157,11 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/teste/regra-negocio")
         void regraNegocio() {
             throw new RegraNegocioException("Já existe um registro com esse nome");
+        }
+
+        @GetMapping("/teste/erro-inesperado")
+        void erroInesperado() {
+            throw new IllegalStateException("detalhe interno que não deve aparecer na resposta");
         }
 
         @GetMapping("/teste/integridade")
