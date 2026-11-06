@@ -171,9 +171,15 @@ as decisões de implementação listadas no fim desta seção.
 
 | O quê | Como | Resultado |
 |---|---|---|
-| Compilação e testes de unidade | `mvnw test` com JDK 21, sem o `BibliotecaVirtualApplicationTests` (precisa do MySQL) | 66 testes, 0 falhas (14 novos) |
-| Migrations + `ddl-auto=validate` | _a fazer: subir com o MySQL do `docker-compose`_ | _pendente_ |
-| Rotas no Swagger | _a fazer: testar `/usuarios` e `/emprestimos`_ | _pendente_ |
+| Testes automatizados | `mvnw test` com JDK 21 e MySQL do `docker-compose` | 67 testes, 0 falhas (14 novos) |
+| Migrations + `ddl-auto=validate` | `contextLoads` sobe a aplicação inteira num banco vazio | V30 e V31 aplicadas; Hibernate aceitou `Usuario` e `Emprestimo` |
+| Rotas de Usuário | Requisições com `curl` contra a aplicação rodando (corpos em arquivo UTF-8) | 201/200/204 nos fluxos normais; 400 (nome vazio, e-mail inválido); 404 (id inexistente); 409 (e-mail e matrícula de outro usuário; excluir usuário com empréstimo) |
+| Rotas de Empréstimo | Mesmas requisições | 201 com prazo padrão de 14 dias ou data informada; 409 sem licença (material com 1 licença), material repetido (RN03) e 4º empréstimo (RN04); 404 (usuário, material ou empréstimo inexistente); 400 (corpo vazio, data no passado, `status=PERDIDO`); devolução 200 e segunda devolução 409; editar devolvido 409; após devolver, outro usuário consegue a licença |
+| RN05 | Data prevista vencida direto no banco + `PATCH /emprestimos/atualizar-atrasados` | `{"atualizados":1}`, status ATRASADO no `GET`; renovar o prazo voltou a ATIVO |
+| Exclusões | `DELETE` de empréstimo, de material com empréstimo e de usuário sem empréstimo | 204; material com empréstimo deu 409 pela rede de segurança da FK; 404 para id inexistente |
+| Swagger | `/swagger-ui.html` e `/v3/api-docs` | UI abre; tags *Usuários* e *Empréstimos* com todas as rotas |
+
+Observação: e-mail com espaços nas pontas é recusado pelo `@Email` (400) antes de chegar ao Service.
 
 ### Decisões que a integrante revisou e precisa saber explicar
 
