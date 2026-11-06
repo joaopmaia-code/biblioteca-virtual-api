@@ -149,3 +149,42 @@ as decisões de implementação listadas no fim desta seção.
 ---
 
 <!-- Pessoa 1 e Pessoa 3: adicionem suas seções abaixo, no mesmo formato. -->
+
+## Pessoa 3 — Sprint 3 (05/11/2026): Usuário e CRUD de Empréstimo
+
+### Ferramenta
+
+- **Claude Code**, modelo **Claude Opus 5.5**, no app desktop do Claude, usado como assistente de
+  programação. Os commits e o push são feitos pela própria integrante, depois de revisar os arquivos.
+
+### Para que a IA foi usada
+
+| Etapa | Uso da IA |
+|---|---|
+| Levantamento | Comparação entre a `main` e uma versão anterior do código de empréstimo feita pela integrante fora do repositório (outro pacote, banco H2/Postgres e outro formato de erro) |
+| Código | Adaptação para o padrão do repositório: migrations `V30` (usuários) e `V31` (empréstimos) em MySQL, entidades com Lombok, DTOs, repositories, services, controllers com `@ApiResponses`, e `RegraNegocioException` (409) no lugar da exceção própria da versão anterior |
+| Regras | RN01 (licença livre, com trava na linha do material), RN02 (prazo padrão de 14 dias), RN03, RN04 (máximo 3), RN05 (rotina agendada a cada hora e rota manual) e a devolução |
+| Testes | Escrita de `EmprestimoServiceTest` (9) e `UsuarioServiceTest` (5) |
+| Documentação | Rascunho deste registro |
+
+### Como o resultado foi verificado
+
+| O quê | Como | Resultado |
+|---|---|---|
+| Compilação e testes de unidade | `mvnw test` com JDK 21, sem o `BibliotecaVirtualApplicationTests` (precisa do MySQL) | 66 testes, 0 falhas (14 novos) |
+| Migrations + `ddl-auto=validate` | _a fazer: subir com o MySQL do `docker-compose`_ | _pendente_ |
+| Rotas no Swagger | _a fazer: testar `/usuarios` e `/emprestimos`_ | _pendente_ |
+
+### Decisões que a integrante revisou e precisa saber explicar
+
+- **Nenhum arquivo de outra pessoa foi alterado.** O `@EnableScheduling` está numa classe nova
+  (`AgendamentoConfig`), e a busca do material com trava fica no `EmprestimoRepository`.
+- **Licença em uso** = empréstimo ATIVO ou ATRASADO. Disponíveis = `quantidadeLicencas` − em uso.
+- **Trava pessimista** (`PESSIMISTIC_WRITE`) no material ao registrar: duas requisições ao mesmo
+  tempo não pegam a mesma última licença.
+- **`EmprestimoRegras` separado do Service**, para a fila de espera (RN11) reaproveitar
+  `podeReceber` e `registrar` ao atender uma reserva.
+- **Edição = renovar o prazo**; renovar um ATRASADO o deixa ATIVO de novo. Empréstimo devolvido não muda.
+- **Excluir material ou usuário com empréstimo** devolve 409 (Usuário checa no Service; Material
+  pela rede de segurança da FK no `GlobalExceptionHandler`).
+- **Fila × devolução (RF09)** ainda não está ligada: entra junto com a Reserva (Pessoa 1).
