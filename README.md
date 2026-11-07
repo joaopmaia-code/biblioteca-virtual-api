@@ -8,9 +8,12 @@ Repositório: https://github.com/joaopmaia-code/biblioteca-virtual-api
 ## Funcionalidades
 
 - **5 CRUDs completos** (cadastrar, editar, listar, consultar por ID e excluir): Material, Autor, Editora, Categoria e Empréstimo.
-- **Funcionalidade extra: fila de espera (Reserva).** Quando todas as licenças de um material estão em uso, o aluno entra numa fila.
-  Na devolução, o primeiro da fila (reserva `AGUARDANDO` mais antiga) recebe o empréstimo automaticamente e a reserva vira `ATENDIDA`.
-  A posição na fila não é gravada no banco: é calculada ordenando as reservas por `dataSolicitacao`.
+- **Funcionalidade extra: recomendação personalizada.** `GET /usuarios/{id}/recomendacoes` sugere até 10 materiais que o
+  aluno ainda não pegou, da mesma categoria ou dos mesmos autores do seu histórico de empréstimos, com a pontuação e o
+  motivo de cada sugestão. (A ideia inicial era uma fila de espera; ela foi trocada pela recomendação, o plano B do
+  planejamento. Ver [Requisitos](docs/REQUISITOS.md#funcionalidade-extra-recomendação-personalizada).)
+- **Regras de empréstimo:** só empresta com licença livre, prazo padrão de 14 dias, sem repetir material, até 3 ativos por
+  usuário, e os vencidos passam a `ATRASADO` automaticamente.
 - O **Usuário** das aulas é reaproveitado e não conta como CRUD.
 
 ## Stack
@@ -131,7 +134,7 @@ Em todas: `POST` devolve **201 Created** com o cabeçalho `Location`, `GET` e `P
 | GET | `/materiais` (ordenado por título) | — |
 | GET | `/materiais/{id}` | 404 |
 | PUT | `/materiais/{id}` | 400, 404 |
-| DELETE | `/materiais/{id}` | 404 |
+| DELETE | `/materiais/{id}` | 404, 409 (tem empréstimos) |
 
 Categoria e autores (pelo menos um) são obrigatórios e a editora é opcional. Todos são enviados pelo ID
 (`categoriaId`, `editoraId`, `autoresIds`) e voltam na resposta resumidos com `id` e `nome`. Exemplo de corpo:
@@ -159,7 +162,7 @@ Categoria e autores (pelo menos um) são obrigatórios e a editora é opcional. 
 | GET | `/autores` (ordenado por nome) | — |
 | GET | `/autores/{id}` | 404 |
 | PUT | `/autores/{id}` | 400, 404 |
-| DELETE | `/autores/{id}` | 404 |
+| DELETE | `/autores/{id}` | 404, 409 (tem materiais vinculados – RN06) |
 
 **Editoras** (Pessoa 1)
 
@@ -169,17 +172,43 @@ Categoria e autores (pelo menos um) são obrigatórios e a editora é opcional. 
 | GET | `/editoras` (ordenado por nome) | — |
 | GET | `/editoras/{id}` | 404 |
 | PUT | `/editoras/{id}` | 400, 404, 409 (CNPJ repetido) |
-| DELETE | `/editoras/{id}` | 404 |
+| DELETE | `/editoras/{id}` | 404, 409 (tem materiais vinculados – RN06) |
 
-### Planejadas
+O CNPJ é aceito com ou sem pontuação, validado pelos dígitos verificadores e salvo só com os 14 dígitos.
 
-| Rota | Descrição | Responsável |
+**Usuários** (Pessoa 3, reaproveitado das aulas, não conta como CRUD)
+
+| Método | Rota | Erros possíveis |
 |---|---|---|
-| `/emprestimos` | CRUD de Empréstimo e devolução | Pessoa 3 |
-| `POST /materiais/{id}/reservas` | Entrar na fila de espera | Pessoa 1 |
-| `GET /materiais/{id}/fila` | Ver a fila do material com posições | Pessoa 1 |
-| `GET /usuarios/{id}/reservas` | Ver as reservas e posições do aluno | Pessoa 1 |
-| `PATCH /reservas/{id}/cancelar` | Sair da fila | Pessoa 1 |
+| POST | `/usuarios` | 400, 409 (e-mail ou matrícula repetidos) |
+| GET | `/usuarios` (ordenado por nome) | — |
+| GET | `/usuarios/{id}` | 404 |
+| PUT | `/usuarios/{id}` | 400, 404, 409 (e-mail ou matrícula repetidos) |
+| DELETE | `/usuarios/{id}` | 404, 409 (tem empréstimos) |
+
+**Empréstimos** (Pessoa 3)
+
+| Método | Rota | Erros possíveis |
+|---|---|---|
+| POST | `/emprestimos` | 400, 404 (usuário ou material inexistente), 409 (sem licença livre, material repetido ou limite de 3) |
+| GET | `/emprestimos` (filtros opcionais `?status=` e `?usuarioId=`) | 400 |
+| GET | `/emprestimos/{id}` | 404 |
+| PUT | `/emprestimos/{id}` (renovar o prazo) | 400, 404, 409 (já devolvido) |
+| PATCH | `/emprestimos/{id}/devolver` | 404, 409 (já devolvido) |
+| DELETE | `/emprestimos/{id}` | 404 |
+| PATCH | `/emprestimos/atualizar-atrasados` (RN05; também roda sozinho a cada hora) | — |
+
+Sem `dataPrevistaDevolucao` no corpo, o prazo é de 14 dias.
+
+**Recomendações** (Pessoa 1, funcionalidade extra)
+
+| Método | Rota | Erros possíveis |
+|---|---|---|
+| GET | `/usuarios/{id}/recomendacoes` | 404 (usuário inexistente) |
+
+Cada material que o usuário ainda não pegou ganha +1 ponto por empréstimo anterior da mesma categoria e +2 por
+empréstimo anterior do mesmo autor; voltam os 10 com mais pontos, cada um com o `motivo`. Sem empréstimos, a lista
+vem vazia.
 
 A documentação completa de cada rota (corpo, exemplos e respostas) está no Swagger.
 
@@ -276,7 +305,7 @@ biblioteca-virtual-api/
 
 | Pessoa | Nome | GitHub | Responsabilidades |
 |---|---|---|---|
-| Pessoa 1 | Pedro Affonso | [@pedrohaffonso](https://github.com/pedrohaffonso) | CRUD de Autor, CRUD de Editora (CNPJ único), entidade Reserva e toda a fila de espera |
+| Pessoa 1 | Pedro Affonso | [@pedrohaffonso](https://github.com/pedrohaffonso) | CRUD de Autor, CRUD de Editora (CNPJ único), RN06 em Autor e Editora e a funcionalidade extra (recomendação personalizada) |
 | Pessoa 2 | João Pedro | [@joaopmaia-code](https://github.com/joaopmaia-code) | Setup do projeto (Spring, banco, Flyway, Swagger), GlobalExceptionHandler, CRUD de Categoria, CRUD de Material (N:N com Autor), README inicial e documentação |
 | Pessoa 3 | Bárbara Tavares | [@barbarattavares](https://github.com/barbarattavares) | CRUD de Empréstimo, devolução e regras RN01–RN05, integração com Usuário, seed de dados e README final |
 
