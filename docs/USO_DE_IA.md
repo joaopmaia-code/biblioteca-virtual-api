@@ -149,3 +149,48 @@ as decisões de implementação listadas no fim desta seção.
 ---
 
 <!-- Pessoa 1 e Pessoa 3: adicionem suas seções abaixo, no mesmo formato. -->
+
+## Pessoa 3 — Sprint 3 (05/11/2026): Usuário e CRUD de Empréstimo
+
+### Ferramenta
+
+- **Claude Code**, modelo **Claude Opus 5.5**, no app desktop do Claude, usado como assistente de
+  programação. Os commits e o push são feitos pela própria integrante, depois de revisar os arquivos.
+
+### Para que a IA foi usada
+
+| Etapa | Uso da IA |
+|---|---|
+| Levantamento | Comparação entre a `main` e uma versão anterior do código de empréstimo feita pela integrante fora do repositório (outro pacote, banco H2/Postgres e outro formato de erro) |
+| Código | Adaptação para o padrão do repositório: migrations `V30` (usuários) e `V31` (empréstimos) em MySQL, entidades com Lombok, DTOs, repositories, services, controllers com `@ApiResponses`, e `RegraNegocioException` (409) no lugar da exceção própria da versão anterior |
+| Regras | RN01 (licença livre, com trava na linha do material), RN02 (prazo padrão de 14 dias), RN03, RN04 (máximo 3), RN05 (rotina agendada a cada hora e rota manual) e a devolução |
+| Testes | Escrita de `EmprestimoServiceTest` (9) e `UsuarioServiceTest` (5) |
+| Documentação | Rascunho deste registro |
+
+### Como o resultado foi verificado
+
+| O quê | Como | Resultado |
+|---|---|---|
+| Testes automatizados | `mvnw test` com JDK 21 e MySQL do `docker-compose` | 67 testes, 0 falhas (14 novos) |
+| Migrations + `ddl-auto=validate` | `contextLoads` sobe a aplicação inteira num banco vazio | V30 e V31 aplicadas; Hibernate aceitou `Usuario` e `Emprestimo` |
+| Rotas de Usuário | Requisições com `curl` contra a aplicação rodando (corpos em arquivo UTF-8) | 201/200/204 nos fluxos normais; 400 (nome vazio, e-mail inválido); 404 (id inexistente); 409 (e-mail e matrícula de outro usuário; excluir usuário com empréstimo) |
+| Rotas de Empréstimo | Mesmas requisições | 201 com prazo padrão de 14 dias ou data informada; 409 sem licença (material com 1 licença), material repetido (RN03) e 4º empréstimo (RN04); 404 (usuário, material ou empréstimo inexistente); 400 (corpo vazio, data no passado, `status=PERDIDO`); devolução 200 e segunda devolução 409; editar devolvido 409; após devolver, outro usuário consegue a licença |
+| RN05 | Data prevista vencida direto no banco + `PATCH /emprestimos/atualizar-atrasados` | `{"atualizados":1}`, status ATRASADO no `GET`; renovar o prazo voltou a ATIVO |
+| Exclusões | `DELETE` de empréstimo, de material com empréstimo e de usuário sem empréstimo | 204; material com empréstimo deu 409 pela rede de segurança da FK; 404 para id inexistente |
+| Swagger | `/swagger-ui.html` e `/v3/api-docs` | UI abre; tags *Usuários* e *Empréstimos* com todas as rotas |
+
+Observação: e-mail com espaços nas pontas é recusado pelo `@Email` (400) antes de chegar ao Service.
+
+### Decisões que a integrante revisou e precisa saber explicar
+
+- **Nenhum arquivo de outra pessoa foi alterado.** O `@EnableScheduling` está numa classe nova
+  (`AgendamentoConfig`), e a busca do material com trava fica no `EmprestimoRepository`.
+- **Licença em uso** = empréstimo ATIVO ou ATRASADO. Disponíveis = `quantidadeLicencas` − em uso.
+- **Trava pessimista** (`PESSIMISTIC_WRITE`) no material ao registrar: duas requisições ao mesmo
+  tempo não pegam a mesma última licença.
+- **`EmprestimoRegras` separado do Service**, para a fila de espera (RN11) reaproveitar
+  `podeReceber` e `registrar` ao atender uma reserva.
+- **Edição = renovar o prazo**; renovar um ATRASADO o deixa ATIVO de novo. Empréstimo devolvido não muda.
+- **Excluir material ou usuário com empréstimo** devolve 409 (Usuário checa no Service; Material
+  pela rede de segurança da FK no `GlobalExceptionHandler`).
+- **Fila × devolução (RF09)** ainda não está ligada: entra junto com a Reserva (Pessoa 1).
