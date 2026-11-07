@@ -97,12 +97,14 @@ public class EditoraController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Excluir editora")
+    @Operation(summary = "Excluir editora", description = "Não exclui editora vinculada a materiais.")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Editora excluída"),
             @ApiResponse(responseCode = "400", description = "ID em formato inválido",
                     content = @Content(schema = @Schema(implementation = ErroResponseDTO.class))),
             @ApiResponse(responseCode = "404", description = "Editora não encontrada",
+                    content = @Content(schema = @Schema(implementation = ErroResponseDTO.class))),
+            @ApiResponse(responseCode = "409", description = "Editora vinculada a materiais",
                     content = @Content(schema = @Schema(implementation = ErroResponseDTO.class)))
     })
     public ResponseEntity<Void> excluir(

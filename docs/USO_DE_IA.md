@@ -194,3 +194,26 @@ Observação: e-mail com espaços nas pontas é recusado pelo `@Email` (400) ant
 - **Excluir material ou usuário com empréstimo** devolve 409 (Usuário checa no Service; Material
   pela rede de segurança da FK no `GlobalExceptionHandler`).
 - **Fila × devolução (RF09)** ainda não está ligada: entra junto com a Reserva (Pessoa 1).
+
+---
+
+## Pessoa 1 — Sprints 1 a 3 (28/10 a 06/11/2026): Autor, Editora, RN06 e recomendação
+
+**Ferramenta:** Claude. Os commits e o push são feitos pelo próprio integrante, depois de revisar os arquivos.
+
+### Onde a IA foi usada
+
+| Etapa | Uso da IA |
+|---|---|
+| Editora | Validação do CNPJ com `@CNPJ` e regra de CNPJ único (409), salvando o CNPJ só com os 14 dígitos |
+| Recomendação | Cálculo de `GET /usuarios/{id}/recomendacoes` pelo histórico de empréstimos (+1 por categoria, +2 por autor, top 10 com o motivo) e o método `findByUsuarioId` no `EmprestimoRepository` (Pessoa 3), sem alterar o que existia |
+| Ambiente | Diagnóstico do Docker travado, da porta 3306 ocupada pelo MySQL do Windows (MySQL do Docker na 3308 via `DB_PORT`), da falta de memória da JVM e do `JAVA_HOME` vazio |
+
+### Como o resultado foi verificado
+
+| O quê | Como | Resultado |
+|---|---|---|
+| CNPJ | `EditoraRequestDTOTest` e `EditoraServiceTest` | Aceita com e sem máscara; recusa dígito verificador errado; CNPJ repetido no cadastro e na atualização dá 409 |
+| Recomendação | `RecomendacaoServiceTest` e chamada à rota | Ordem e motivo corretos; lista vazia sem histórico; 404 para usuário inexistente |
+| Ambiente | Subida da aplicação no MySQL do Docker (porta 3308) | Migrations V10 a V31 aplicadas; `ddl-auto=validate` sem erro; Swagger abre |
+| Projeto todo | `mvnw test` | 73 testes, 0 falhas |

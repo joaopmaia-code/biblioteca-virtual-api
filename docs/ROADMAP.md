@@ -25,6 +25,10 @@ commits relevantes e conseguir explicar o fluxo de ponta a ponta.
 
 > **Caminho crítico:** Material e Empréstimo. Se travarem, os outros ajudam primeiro neles.
 
+> **Mudança de escopo (06/11):** a funcionalidade extra deixou de ser a fila de espera e passou a ser a
+> recomendação personalizada (o plano B do planejamento), porque a fila dependia de Usuário e Empréstimo,
+> que só ficaram prontos no fim. Detalhes em [REQUISITOS](REQUISITOS.md#funcionalidade-extra-recomendação-personalizada).
+
 ---
 
 ## Sprint 1 (16/10 a 22/10): base e CRUDs simples
@@ -32,9 +36,9 @@ commits relevantes e conseguir explicar o fluxo de ponta a ponta.
 Meta: setup e todos os Models na `main` até sábado, 17/10.
 
 ### Pessoa 1 — Pedro Affonso
-- [ ] Model + migration de Autor e Editora
-- [ ] CRUD completo de Autor
-- [ ] CRUD completo de Editora
+- [x] Model + migration de Autor e Editora (PR #4, 28/10)
+- [x] CRUD completo de Autor (PR #5, 01/11)
+- [x] CRUD completo de Editora (PR #6, 01/11)
 
 ### Pessoa 2 — João Pedro
 - [x] Setup do projeto (Spring, banco, Flyway, Swagger)
@@ -55,8 +59,8 @@ Meta: setup e todos os Models na `main` até sábado, 17/10.
 ## Sprint 2 (23/10 a 29/10): CRUDs principais
 
 ### Pessoa 1 — Pedro Affonso
-- [ ] Service e rotas da Reserva
-- [ ] Regras RN08–RN10
+- [ ] ~~Service e rotas da Reserva~~ (fila substituída pela recomendação, ver abaixo)
+- [ ] ~~Regras RN08–RN10 da fila~~
 
 ### Pessoa 2 — João Pedro
 - [x] CRUD de Material (N:N com Autor)
@@ -77,9 +81,11 @@ A integração fila × devolução é feita em conjunto pelas Pessoas 1 e 3, reg
 `Co-authored-by:` nos commits.
 
 ### Pessoa 1 — Pedro Affonso
-- [ ] Integração fila × devolução (com a Pessoa 3)
-- [ ] RN11 e correção de bugs da fila
-- [ ] Registro do uso de IA
+- [ ] ~~Integração fila × devolução (com a Pessoa 3)~~ (fila substituída pela recomendação)
+- [ ] ~~RN11 e correção de bugs da fila~~
+- [x] RN06 em Autor e Editora (06/11)
+- [x] Funcionalidade extra: recomendação personalizada, `GET /usuarios/{id}/recomendacoes` (06/11)
+- [x] Registro do uso de IA (06/11)
 
 ### Pessoa 2 — João Pedro
 - [ ] Revisão final do código e camadas

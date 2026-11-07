@@ -36,6 +36,10 @@ public interface EmprestimoRepository extends JpaRepository<Emprestimo, Long> {
     /** Usado ao excluir usuário: ele tem histórico de empréstimos? */
     boolean existsByUsuarioId(Long usuarioId);
 
+    /** Recomendação: histórico do usuário, já com a categoria e os autores de cada material. */
+    @EntityGraph(attributePaths = {"material", "material.categoria", "material.autores"})
+    List<Emprestimo> findByUsuarioId(Long usuarioId);
+
     /**
      * Busca o material travando a linha até o fim da transação, para que dois empréstimos
      * ao mesmo tempo não peguem a mesma última licença (RN01).
