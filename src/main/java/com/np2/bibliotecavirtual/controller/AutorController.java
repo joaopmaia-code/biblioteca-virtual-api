@@ -93,12 +93,14 @@ public class AutorController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Excluir autor")
+    @Operation(summary = "Excluir autor", description = "Não exclui autor vinculado a materiais.")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Autor excluído"),
             @ApiResponse(responseCode = "400", description = "ID em formato inválido",
                     content = @Content(schema = @Schema(implementation = ErroResponseDTO.class))),
             @ApiResponse(responseCode = "404", description = "Autor não encontrado",
+                    content = @Content(schema = @Schema(implementation = ErroResponseDTO.class))),
+            @ApiResponse(responseCode = "409", description = "Autor vinculado a materiais",
                     content = @Content(schema = @Schema(implementation = ErroResponseDTO.class)))
     })
     public ResponseEntity<Void> excluir(

@@ -6,6 +6,7 @@ import com.np2.bibliotecavirtual.exception.RecursoNaoEncontradoException;
 import com.np2.bibliotecavirtual.exception.RegraNegocioException;
 import com.np2.bibliotecavirtual.model.Editora;
 import com.np2.bibliotecavirtual.repository.EditoraRepository;
+import com.np2.bibliotecavirtual.repository.MaterialRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -29,6 +30,9 @@ class EditoraServiceTest {
 
     @Mock
     private EditoraRepository editoraRepository;
+
+    @Mock
+    private MaterialRepository materialRepository;
 
     @InjectMocks
     private EditoraService editoraService;
@@ -93,6 +97,28 @@ class EditoraServiceTest {
         assertThatThrownBy(() -> editoraService.atualizar(2L, dto))
                 .isInstanceOf(RegraNegocioException.class);
         verify(editoraRepository, never()).save(any());
+    }
+
+    @Test
+    void excluirEditoraComMateriaisLancaRegraNegocioENaoExclui() {
+        when(editoraRepository.findById(1L)).thenReturn(Optional.of(editoraComId(1L, "11222333000181")));
+        when(materialRepository.existsByEditoraId(1L)).thenReturn(true);
+
+        assertThatThrownBy(() -> editoraService.excluir(1L))
+                .isInstanceOf(RegraNegocioException.class)
+                .hasMessage("Não é possível excluir a editora 'Editora Antiga': existem materiais vinculados a ela");
+        verify(editoraRepository, never()).delete(any());
+    }
+
+    @Test
+    void excluirEditoraSemMateriaisRemove() {
+        Editora existente = editoraComId(1L, "11222333000181");
+        when(editoraRepository.findById(1L)).thenReturn(Optional.of(existente));
+        when(materialRepository.existsByEditoraId(1L)).thenReturn(false);
+
+        editoraService.excluir(1L);
+
+        verify(editoraRepository).delete(existente);
     }
 
     @Test

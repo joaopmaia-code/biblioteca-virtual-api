@@ -3,8 +3,10 @@ package com.np2.bibliotecavirtual.service;
 import com.np2.bibliotecavirtual.dto.AutorRequestDTO;
 import com.np2.bibliotecavirtual.dto.AutorResponseDTO;
 import com.np2.bibliotecavirtual.exception.RecursoNaoEncontradoException;
+import com.np2.bibliotecavirtual.exception.RegraNegocioException;
 import com.np2.bibliotecavirtual.model.Autor;
 import com.np2.bibliotecavirtual.repository.AutorRepository;
+import com.np2.bibliotecavirtual.repository.MaterialRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -31,6 +33,9 @@ class AutorServiceTest {
 
     @Mock
     private AutorRepository autorRepository;
+
+    @Mock
+    private MaterialRepository materialRepository;
 
     @InjectMocks
     private AutorService autorService;
@@ -102,6 +107,17 @@ class AutorServiceTest {
         autorService.excluir(1L);
 
         verify(autorRepository).delete(existente);
+    }
+
+    @Test
+    void excluirAutorComMateriaisLancaRegraNegocioENaoExclui() {
+        when(autorRepository.findById(1L)).thenReturn(Optional.of(autorComId(1L, "Machado de Assis")));
+        when(materialRepository.existsByAutoresId(1L)).thenReturn(true);
+
+        assertThatThrownBy(() -> autorService.excluir(1L))
+                .isInstanceOf(RegraNegocioException.class)
+                .hasMessage("Não é possível excluir o autor 'Machado de Assis': existem materiais vinculados a ele");
+        verify(autorRepository, never()).delete(any());
     }
 
     @Test

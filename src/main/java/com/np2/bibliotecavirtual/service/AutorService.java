@@ -3,8 +3,10 @@ package com.np2.bibliotecavirtual.service;
 import com.np2.bibliotecavirtual.dto.AutorRequestDTO;
 import com.np2.bibliotecavirtual.dto.AutorResponseDTO;
 import com.np2.bibliotecavirtual.exception.RecursoNaoEncontradoException;
+import com.np2.bibliotecavirtual.exception.RegraNegocioException;
 import com.np2.bibliotecavirtual.model.Autor;
 import com.np2.bibliotecavirtual.repository.AutorRepository;
+import com.np2.bibliotecavirtual.repository.MaterialRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,7 @@ import java.util.List;
 public class AutorService {
 
     private final AutorRepository autorRepository;
+    private final MaterialRepository materialRepository;
 
     @Transactional
     public AutorResponseDTO cadastrar(AutorRequestDTO dto) {
@@ -44,10 +47,16 @@ public class AutorService {
         return AutorResponseDTO.de(autorRepository.save(autor));
     }
 
-    // RN06 (não excluir autor vinculado a material) entra quando a tabela material_autor existir (V22).
     @Transactional
     public void excluir(Long id) {
         Autor autor = buscarAutor(id);
+
+        // RN06: não excluir autor que ainda assina materiais.
+        if (materialRepository.existsByAutoresId(id)) {
+            throw new RegraNegocioException("Não é possível excluir o autor '" + autor.getNome()
+                    + "': existem materiais vinculados a ele");
+        }
+
         autorRepository.delete(autor);
     }
 

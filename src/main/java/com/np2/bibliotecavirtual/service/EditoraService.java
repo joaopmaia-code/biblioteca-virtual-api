@@ -6,6 +6,7 @@ import com.np2.bibliotecavirtual.exception.RecursoNaoEncontradoException;
 import com.np2.bibliotecavirtual.exception.RegraNegocioException;
 import com.np2.bibliotecavirtual.model.Editora;
 import com.np2.bibliotecavirtual.repository.EditoraRepository;
+import com.np2.bibliotecavirtual.repository.MaterialRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ import java.util.List;
 public class EditoraService {
 
     private final EditoraRepository editoraRepository;
+    private final MaterialRepository materialRepository;
 
     @Transactional
     public EditoraResponseDTO cadastrar(EditoraRequestDTO dto) {
@@ -56,10 +58,16 @@ public class EditoraService {
         return EditoraResponseDTO.de(editoraRepository.save(editora));
     }
 
-    // RN06 (não excluir editora vinculada a material) entra quando materiais.editora_id existir (V22).
     @Transactional
     public void excluir(Long id) {
         Editora editora = buscarEditora(id);
+
+        // RN06: não excluir editora que ainda publica materiais.
+        if (materialRepository.existsByEditoraId(id)) {
+            throw new RegraNegocioException("Não é possível excluir a editora '" + editora.getNome()
+                    + "': existem materiais vinculados a ela");
+        }
+
         editoraRepository.delete(editora);
     }
 
