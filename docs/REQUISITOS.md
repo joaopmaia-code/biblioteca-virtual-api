@@ -68,6 +68,12 @@ responder pelo colega.
   só aceita um número fixo.
 - **RN06:** o Service checa antes de excluir e devolve 409 com a mensagem da regra. Como rede de segurança,
   qualquer recusa do banco por constraint (`DataIntegrityViolationException`) também vira 409.
+- **Autor e Editora:** `dataNascimento` (autor) e `site` (editora) são opcionais, porque nem sempre se
+  sabe a data de nascimento do autor e nem toda editora tem site.
+- **CNPJ:** validado com `@CNPJ` (confere os dígitos verificadores) e salvo só com os 14 dígitos, para
+  `11.222.333/0001-81` e `11222333000181` contarem como o mesmo na regra de CNPJ único.
+- **Funcionalidade extra:** a fila de espera foi substituída pela recomendação personalizada (o plano B do
+  planejamento), porque a fila dependia de Usuário e Empréstimo, que só ficaram prontos no fim.
 
 **Em aberto:**
 - Valor de RN02 (prazo padrão de empréstimo; sugestão: 14 dias)
@@ -77,8 +83,8 @@ responder pelo colega.
 ## Entidades
 
 Os 5 CRUDs são **Material, Autor, Editora, Categoria e Emprestimo** (opção B, biblioteca
-clássica). A funcionalidade extra adiciona a entidade **Reserva**, e o **Usuário** das aulas
-é reaproveitado sem contar como CRUD.
+clássica). A funcionalidade extra é a **recomendação personalizada**, que não cria entidade
+nova, e o **Usuário** das aulas é reaproveitado sem contar como CRUD.
 
 ### Nomes e convenções
 
@@ -89,7 +95,7 @@ clássica). A funcionalidade extra adiciona a entidade **Reserva**, e o **Usuár
 | `Editora` | `editoras` | `/editoras` |
 | `Categoria` | `categorias` | `/categorias` |
 | `Emprestimo` | `emprestimos` | `/emprestimos` |
-| `Reserva` | `reservas` | `/reservas` |
+| `Usuario` | `usuarios` | `/usuarios` |
 | (ligação N:N) | `material_autor` | — |
 
 - Classes no singular, PascalCase e sem acento
@@ -122,7 +128,7 @@ campos que não servem para todos os tipos ficam opcionais.
 |---|---|---|
 | nome | String | obrigatório |
 | nacionalidade | String | opcional |
-| dataNascimento | LocalDate | no passado |
+| dataNascimento | LocalDate | opcional, no passado |
 | biografia | String (TEXT) | opcional |
 
 ### Editora
@@ -130,9 +136,9 @@ campos que não servem para todos os tipos ficam opcionais.
 | Atributo | Tipo | Validação |
 |---|---|---|
 | nome | String | obrigatório |
-| cnpj | String | obrigatório, único, formato válido |
+| cnpj | String | obrigatório, único, CNPJ válido (dígitos verificadores) |
 | cidade | String | obrigatório |
-| site | String | URL válida |
+| site | String | opcional, URL válida |
 
 ### Categoria
 
@@ -154,16 +160,6 @@ campos que não servem para todos os tipos ficam opcionais.
 | dataDevolucao | LocalDateTime | preenchida ao devolver |
 | status | Enum | `ATIVO`, `DEVOLVIDO`, `ATRASADO` |
 
-### Reserva (funcionalidade extra)
-
-| Atributo | Tipo | Validação |
-|---|---|---|
-| usuario | FK → Usuário | obrigatório |
-| material | FK → Material | obrigatório |
-| dataSolicitacao | LocalDateTime | automática, define a ordem da fila |
-| status | Enum | `AGUARDANDO`, `ATENDIDA`, `CANCELADA` |
-| dataAtendimento | LocalDateTime | preenchida ao virar empréstimo |
-
 **Unicidade:** CNPJ da editora e nome da categoria são únicos para evitar registros
 duplicados que dividiriam os materiais. A regra fica no banco (constraint `UNIQUE`) e no
 Service (`existsBy...`, resposta 409).
@@ -178,15 +174,12 @@ erDiagram
     AUTOR ||--o{ MATERIAL_AUTOR : escreve
     USUARIO ||--o{ EMPRESTIMO : realiza
     MATERIAL ||--o{ EMPRESTIMO : "emprestado em"
-    USUARIO ||--o{ RESERVA : faz
-    MATERIAL ||--o{ RESERVA : "fila de espera"
 ```
 
 - Categoria 1:N Material (todo material tem uma categoria)
 - Editora 1:N Material (opcional: um material pode não ter editora)
 - Material N:N Autor, pela tabela `material_autor`
 - Usuário 1:N Empréstimo e Material 1:N Empréstimo
-- Usuário 1:N Reserva e Material 1:N Reserva
 
 ## Requisitos funcionais
 
@@ -199,10 +192,7 @@ erDiagram
 | RF05 | Cadastrar, editar, listar, consultar por ID e excluir categorias |
 | RF06 | Registrar, editar, listar, consultar por ID e excluir empréstimos |
 | RF07 | Registrar a devolução de um material emprestado |
-| RF08 | Entrar na fila de espera de um material sem licenças disponíveis |
-| RF09 | Atender automaticamente o primeiro da fila quando uma licença for liberada |
-| RF10 | Consultar a fila de um material e as reservas de um usuário |
-| RF11 | Cancelar uma reserva |
+| RF08 | Recomendar a um usuário materiais parecidos com os do seu histórico de empréstimos |
 
 ## Regras de negócio
 
@@ -215,10 +205,8 @@ erDiagram
 | RN05 | Empréstimos não devolvidos após o prazo passam ao status ATRASADO |
 | RN06 | Não é permitido excluir autor, editora ou categoria vinculados a materiais |
 | RN07 | O CNPJ da editora e o nome da categoria devem ser únicos |
-| RN08 | Só é possível reservar um material sem licenças disponíveis |
-| RN09 | Um usuário não pode estar duas vezes na mesma fila nem reservar algo que já tem emprestado |
-| RN10 | A fila é atendida por ordem de solicitação |
-| RN11 | Ao atender a reserva valem as regras de empréstimo; se o usuário não puder receber, passa para o próximo |
+| RN08 | A recomendação só sugere materiais que o usuário ainda não pegou emprestado |
+| RN09 | Cada material ganha +1 ponto por empréstimo anterior da mesma categoria e +2 por empréstimo anterior do mesmo autor; vão no máximo os 10 com mais pontos |
 
 ## Requisitos não funcionais
 
@@ -232,37 +220,34 @@ erDiagram
 | RNF06 | Todas as rotas documentadas no Swagger |
 | RNF07 | Código versionado no GitHub com instruções de execução no README |
 
-## Funcionalidade extra: fila de espera
+## Funcionalidade extra: recomendação personalizada
 
-Quando todas as licenças de um material estão em uso, o aluno entra numa fila; quando
-alguém devolve, o primeiro da fila recebe o empréstimo automaticamente. Foi escolhida no
-lugar da recomendação personalizada por ter mais regra de negócio e dar sentido ao
-atributo `quantidadeLicencas`.
+Com base no que o aluno já pegou emprestado, a API sugere outros materiais do acervo da mesma
+categoria ou dos mesmos autores. O aluno consulta quando quiser, e a resposta diz o motivo de
+cada sugestão.
 
-### Fluxo
+A ideia original era uma fila de espera (reserva de material sem licença livre). Ela foi
+trocada pela recomendação, que era o plano B do planejamento, porque dependia de Usuário e
+Empréstimo, que só ficaram prontos no fim do prazo.
 
-1. O aluno tenta pegar emprestado um material sem licença livre e recebe 409: "Sem
-   licenças disponíveis. Entre na fila de espera."
-2. Ele cria a reserva e entra no fim da fila.
-3. Na devolução, o sistema pega a reserva AGUARDANDO mais antiga, cria o empréstimo para
-   esse aluno e marca a reserva como ATENDIDA.
-4. Sem ninguém na fila, a licença fica livre.
+### Como funciona
 
-A posição na fila **não é salva no banco**: é calculada ordenando as reservas AGUARDANDO por
-`dataSolicitacao`, o que evita reordenar a fila a cada cancelamento.
+1. Busca o histórico de empréstimos do usuário (qualquer status).
+2. Conta quantas vezes ele pegou cada categoria e cada autor.
+3. Para cada material que ele **ainda não pegou**, soma +1 por empréstimo anterior da mesma
+   categoria e +2 por empréstimo anterior de cada mesmo autor (autor é uma afinidade mais
+   específica, por isso vale mais).
+4. Descarta quem ficou com 0 pontos, ordena do maior para o menor (empate: título) e devolve
+   no máximo 10, cada um com a pontuação e o motivo.
 
-### Rotas
+Usuário sem empréstimos recebe uma lista vazia; usuário inexistente, 404.
+
+### Rota
 
 | Método | Rota | Ação |
 |---|---|---|
-| POST | `/materiais/{id}/reservas` | Entrar na fila |
-| GET | `/materiais/{id}/fila` | Ver a fila do material com posições |
-| GET | `/usuarios/{id}/reservas` | Ver as reservas e posições do aluno |
-| PATCH | `/reservas/{id}/cancelar` | Sair da fila |
+| GET | `/usuarios/{id}/recomendacoes` | Materiais recomendados para o usuário, com pontuação e motivo |
 
-**Demo:** cadastrar um material com `quantidadeLicencas = 1` e usar 2 ou 3 usuários para
-mostrar o ciclo completo no Swagger.
-
-**Plano B:** se o professor achar a fila pesada demais, a alternativa é a recomendação
-personalizada (`GET /usuarios/{id}/recomendacoes`, baseada nas categorias e autores mais
-emprestados pelo aluno).
+**Demo:** cadastrar materiais de duas categorias e autores diferentes, emprestar dois livros do
+mesmo autor a um aluno e chamar a rota: o outro livro desse autor vem primeiro, depois os da
+mesma categoria.

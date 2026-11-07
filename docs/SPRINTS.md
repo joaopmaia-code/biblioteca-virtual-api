@@ -12,7 +12,8 @@ Cada pessoa atualiza a própria parte. Datas no horário de Brasília.
 
 ### Pessoa 1 — Pedro Affonso
 - **Entregas:** o Model e as migrations de Autor e Editora ficaram para a Sprint 2 (PR #4, 28/10).
-- **Dificuldades:** _a preencher pela Pessoa 1._
+- **Dificuldades:** começo atrasado; a parte da Pessoa 1 foi dividida em blocos menores (Model e
+  migrations, CRUD de Autor, CRUD de Editora, documentação) para recuperar o prazo.
 
 ### Pessoa 2 — João Pedro
 - **Entregas (16/10):**
@@ -36,7 +37,9 @@ Cada pessoa atualiza a própria parte. Datas no horário de Brasília.
 
 ### Pessoa 1 — Pedro Affonso
 - **Entregas (28/10):** PR #4: entidades Autor e Editora, repositories e migrations `V10` e `V11`.
-- **Dificuldades:** _a preencher pela Pessoa 1._
+- **Dificuldades:** o Docker Desktop travou (erro 500 na API) e as migrations só puderam ser conferidas no
+  MySQL depois do merge; ficou resolvido encerrando o Docker e rodando `wsl --shutdown`. As duas
+  migrations subiram sem erro na primeira verificação (01/11).
 
 ### Pessoa 2 — João Pedro
 - **Entregas:** nenhuma entrega na `main` nesta sprint. O CRUD de Material precisava das tabelas `autores` e
@@ -55,9 +58,17 @@ Cada pessoa atualiza a própria parte. Datas no horário de Brasília.
 - **Entregas:**
   - PR #5 (01/11): CRUD completo de Autor.
   - PR #6 (01/11): CRUD completo de Editora, com CNPJ único (409) e CNPJ salvo só com dígitos.
-- **Dificuldades:** _a preencher pela Pessoa 1._
-- **Próximo passo:** Reserva e fila de espera (RN08–RN11); RN06 em Autor e Editora usando
-  `existsByAutoresId` e `existsByEditoraId` do `MaterialRepository`.
+  - Branch `pedro-dev` (06/11): RN06 em Autor e Editora (409 ao excluir com materiais vinculados) e a
+    funcionalidade extra, recomendação personalizada (`GET /usuarios/{id}/recomendacoes`), com testes.
+- **Dificuldades:**
+  - A porta 3306 estava ocupada pelo MySQL instalado no Windows; o MySQL do Docker passou a rodar na
+    3308 pela variável `DB_PORT`, num `.env` local.
+  - O computador tem 4 GB de RAM e a JVM falhava por falta de memória; a aplicação passou a rodar com
+    `-Xmx384m`.
+  - A fila de espera dependia de Usuário e Empréstimo (Pessoa 3), que só ficaram prontos em 05/11. A
+    equipe trocou a funcionalidade extra pela recomendação personalizada (plano B do planejamento), que
+    usa o histórico de empréstimos; para isso a `barbara-dev` foi trazida para a `pedro-dev`.
+- **Próximo passo:** PR da `pedro-dev` (depois do PR da Pessoa 3) e ensaio da apresentação.
 
 ### Pessoa 2 — João Pedro
 - **Entregas:**
@@ -89,6 +100,6 @@ Cada pessoa atualiza a própria parte. Datas no horário de Brasília.
 
 | Pessoa | Pull Requests | O que entregou |
 |---|---|---|
-| Pessoa 1 — Pedro Affonso | #4, #5, #6 | Autor e Editora (Model, migrations, CRUDs completos com Swagger) |
+| Pessoa 1 — Pedro Affonso | #4, #5, #6 e PR da `pedro-dev` | Autor e Editora (Model, migrations, CRUDs completos com Swagger), RN06 em Autor e Editora e a funcionalidade extra (recomendação personalizada) |
 | Pessoa 2 — João Pedro | #1, #2, #3, #7 | Setup, tratamento de erros, CRUDs de Categoria e Material, documentação |
 | Pessoa 3 — Bárbara Tavares | _a preencher_ | _a preencher_ |
