@@ -3,7 +3,7 @@
 Versão em Markdown do planejamento. Fonte: [NP2 – Biblioteca Virtual Planejamento Completo.pdf](NP2%20%E2%80%93%20Biblioteca%20Virtual%20Planejamento%20Completo.pdf).
 
 A NP2 é o backend (API REST) de uma biblioteca pública virtual para uma escola de ensino
-médio, feito em equipe de 3 pessoas, com entrega e apresentação até 06/11/2026. Não há
+médio, feito em equipe de 3 pessoas, com entrega até 08/11/2026 (prazo estendido; o original era 06/11). Não há
 interface visual.
 
 ## O que o professor exige

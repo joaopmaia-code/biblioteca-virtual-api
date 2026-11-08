@@ -7,7 +7,7 @@ dúvida, ele é a fonte da verdade.
 ## Projeto
 
 API REST (sem interface visual) de uma biblioteca virtual de escola de ensino médio,
-feita por 3 pessoas. Entrega e apresentação até 06/11/2026.
+feita por 3 pessoas. Entrega até 08/11/2026 (prazo estendido pelo professor; o original era 06/11).
 
 - Java 17 ou 21 (código compilado com `java.version=17`; JDK mais novo quebra o Lombok), Spring Boot 3.5, Maven (wrapper `mvnw`)
 - Spring Web, Spring Data JPA, Bean Validation, Flyway (+ `flyway-mysql`), MySQL 8.4, Lombok

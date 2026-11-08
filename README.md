@@ -1,9 +1,12 @@
 # Biblioteca Virtual API
 
 API REST (sem interface visual) de uma biblioteca pública virtual para uma escola de ensino médio.
-Trabalho da NP2 – Tópicos Web, feito pela equipe **Compila e Reza** (3 pessoas), com entrega e apresentação até 06/11/2026.
+Trabalho da NP2 – Tópicos Web, feito pela equipe **Compila e Reza** (3 pessoas), com entrega até 08/11/2026 (prazo estendido pelo professor; o original era 06/11).
 
 Repositório: https://github.com/joaopmaia-code/biblioteca-virtual-api
+
+**Versão entregue (08/11/2026):** tag [`np2-entrega`](https://github.com/joaopmaia-code/biblioteca-virtual-api/tree/np2-entrega)
+na branch `main`. O hash do commit aparece com `git rev-parse np2-entrega`.
 
 ## Funcionalidades
 

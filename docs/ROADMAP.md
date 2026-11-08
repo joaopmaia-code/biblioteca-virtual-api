@@ -167,7 +167,8 @@ Para a API se parecer mais com uma biblioteca digital. Detalhes em
 ### Entrega
 - [ ] Revisão final e teste de todos os fluxos no Swagger
 - [ ] `./mvnw test` passando com o MySQL rodando
-- [ ] Registrar no README o commit da versão entregue
+- [x] Registrar no README a versão entregue (tag `np2-entrega`)
+- [x] Testar a demo do zero na `main` (banco vazio + perfil `demo`): seed, rotas do roteiro e 99 testes ok (08/11)
 - [ ] Montar o ZIP e enviar no Moodle
 - [ ] Ensaiar a apresentação
 
@@ -175,12 +176,13 @@ Para a API se parecer mais com uma biblioteca digital. Detalhes em
 
 ## Entrega e apresentação
 
-O ZIP vai para o Moodle até 06/11 e o sistema precisa estar rodando no início do horário reservado.
+O ZIP vai para o Moodle até 08/11 (prazo estendido pelo professor; o original era 06/11) e o sistema precisa
+estar rodando no início do horário reservado.
 
 ### Checklist do ZIP
 - [ ] Código-fonte do projeto
 - [x] Nomes dos integrantes e usuários do GitHub (README, seção Equipe)
-- [ ] Link do repositório e commit da versão entregue (o link já está no README; falta o commit)
+- [x] Link do repositório e versão entregue (README: tag `np2-entrega`; colar também o hash no Moodle)
 - [x] Instruções de configuração e execução (README)
 - [ ] Descrição das contribuições de cada integrante (falta a Pessoa 3 em `SPRINTS.md`)
 - [x] Registro do uso de IA das 3 pessoas (ferramenta, para que foi usada, como o resultado foi verificado)
