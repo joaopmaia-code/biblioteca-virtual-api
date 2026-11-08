@@ -89,7 +89,8 @@ mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=demo"          # Windows (P
 ```
 
 Os 16 livros são clássicos em domínio público do [Project Gutenberg](https://www.gutenberg.org) (dados obtidos pela
-API [Gutendex](https://gutendex.com)), com o link real de leitura em `urlArquivo`; o número de páginas veio do
+API [Gutendex](https://gutendex.com)), com o link real de leitura em `urlArquivo` e a capa em `urlCapa` (a folha de rosto
+escaneada da edição original); o número de páginas veio do
 [Open Library](https://openlibrary.org). Os 4 materiais da "Editora Escolar (exemplo)" são fictícios, para mostrar
 apostila, vídeo e artigo. O seed fica em `config/DadosDemo.java`.
 
@@ -236,9 +237,12 @@ pelo banco a cada consulta. Exemplo de corpo:
   "quantidadeLicencas": 3,
   "categoriaId": 1,
   "editoraId": 1,
-  "autoresIds": [1, 2]
+  "autoresIds": [1, 2],
+  "urlCapa": "https://www.gutenberg.org/cache/epub/55752/pg55752.cover.medium.jpg"
 }
 ```
+
+`urlCapa` é opcional (imagem de capa). Sem ela, o front mostra um bloco colorido com o título.
 
 **Busca no acervo** (Pessoa 2): `GET /materiais/busca`. Todos os parâmetros são opcionais e combinados com "e":
 
@@ -442,7 +446,7 @@ biblioteca-virtual-api/
 | `V10+` | Pessoa 1 |
 | `V20+` | Pessoa 2 |
 | `V30+` | Pessoa 3 |
-| `V40+` | Funcionalidades novas que dependem de Usuário/Empréstimo (Pessoa 2: avaliações, progresso de leitura e, na `V42`, perfil e senha do usuário) |
+| `V40+` | Funcionalidades novas que dependem de Usuário/Empréstimo (Pessoa 2: avaliações, progresso de leitura; `V42` perfil e senha do usuário; `V43` capa do material) |
 
 - Uma migration com chave estrangeira precisa de número maior que a da tabela referenciada: num banco zerado o Flyway
   aplica em ordem de versão. Por isso `avaliacoes` (`V40`) e `progressos_leitura` (`V41`), que dependem de `usuarios`

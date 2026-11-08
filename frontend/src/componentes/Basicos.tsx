@@ -1,15 +1,30 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { mensagemDeErro } from '../api/cliente'
 import type { StatusEmprestimo } from '../api/tipos'
 import { corDaCapa, ROTULO_STATUS } from '../util/formato'
 
-/** Capa gerada (o acervo não tem imagens): bloco colorido com o título. */
-export function Capa({ id, titulo, rotulo, grande = false }: { id: number; titulo: string; rotulo?: string; grande?: boolean }) {
+interface PropsCapa {
+  id: number
+  titulo: string
+  /** Imagem de capa; sem ela (ou se não carregar, ex.: sem internet), mostra um bloco colorido com o título. */
+  urlCapa?: string | null
+  rotulo?: string
+  grande?: boolean
+}
+
+/** Capa do material. É decorativa (o título já aparece ao lado), por isso fica escondida dos leitores de tela. */
+export function Capa({ id, titulo, urlCapa, rotulo, grande = false }: PropsCapa) {
+  const [falhou, setFalhou] = useState(false)
+  const temImagem = Boolean(urlCapa) && !falhou
+
   return (
     <div className={grande ? 'capa capa-grande' : 'capa'} style={{ background: corDaCapa(id) }} aria-hidden="true">
+      {temImagem && (
+        <img className="capa-imagem" src={urlCapa!} alt="" loading="lazy" onError={() => setFalhou(true)} />
+      )}
       {rotulo && <span className="capa-rotulo">{rotulo}</span>}
-      <span className="capa-titulo">{titulo}</span>
+      {!temImagem && <span className="capa-titulo">{titulo}</span>}
     </div>
   )
 }

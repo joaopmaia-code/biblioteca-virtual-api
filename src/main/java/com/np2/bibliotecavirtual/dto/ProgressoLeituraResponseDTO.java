@@ -23,6 +23,9 @@ public record ProgressoLeituraResponseDTO(
         @Schema(description = "Material (o nome é o título)")
         ResumoDTO material,
 
+        @Schema(description = "Imagem de capa do material (null quando não tem)")
+        String urlCapa,
+
         @Schema(example = "ATIVO")
         StatusEmprestimo statusEmprestimo,
 
@@ -58,6 +61,7 @@ public record ProgressoLeituraResponseDTO(
                 emprestimo.getId(),
                 new ResumoDTO(emprestimo.getUsuario().getId(), emprestimo.getUsuario().getNome()),
                 new ResumoDTO(material.getId(), material.getTitulo()),
+                material.getUrlCapa(),
                 emprestimo.getStatus(),
                 emprestimo.getDataPrevistaDevolucao(),
                 pagina,

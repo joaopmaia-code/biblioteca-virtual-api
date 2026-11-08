@@ -48,7 +48,7 @@ export function Inicio() {
           )}
           {leituras.dados?.map((leitura) => (
             <article key={leitura.emprestimoId} className="cartao cartao-linha">
-              <Capa id={leitura.material.id} titulo={leitura.material.nome} />
+              <Capa id={leitura.material.id} titulo={leitura.material.nome} urlCapa={leitura.urlCapa} />
               <div className="pilha pilha-justa crescer">
                 <div className="linha-entre">
                   <Link to={`/materiais/${leitura.material.id}`} className="titulo-cartao">
@@ -133,7 +133,7 @@ export function Inicio() {
         <div className="grade-cartoes">
           {recomendacoes.dados?.map(({ material, motivo }) => (
             <Link key={material.id} to={`/materiais/${material.id}`} className="cartao cartao-material">
-              <Capa id={material.id} titulo={material.titulo} />
+              <Capa id={material.id} titulo={material.titulo} urlCapa={material.urlCapa} />
               <div>
                 <div className="titulo-cartao">{material.titulo}</div>
                 <div className="texto-suave texto-pequeno">

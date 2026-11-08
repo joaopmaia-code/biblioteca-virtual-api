@@ -132,6 +132,8 @@ Para a API se parecer mais com uma biblioteca digital. Detalhes em
 - [x] Progresso de leitura: `/emprestimos/{id}/progresso` e `/usuarios/{id}/leituras` (RF11, RN13–RN14, migration `V41`)
 - [x] Licenças disponíveis em cada material
 - [x] Gamificação: perfil de leitor, níveis, conquistas e ranking (RF12, RN15–RN17)
+- [x] Capas dos livros: campo `urlCapa` (migration `V43`), capas reais do Project Gutenberg no seed e imagem no front
+  com o bloco colorido como reserva
 - [x] Autenticação e perfis (ALUNO, PROFESSOR, BIBLIOTECARIO): login com JWT, senha BCrypt, permissões por perfil e
   por dono do recurso, migration `V42`, login no front (RF13, RN18–RN22)
 - [x] Testes (99 no total) e teste de ponta a ponta num MySQL vazio

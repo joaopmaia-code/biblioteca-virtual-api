@@ -78,7 +78,17 @@ class MaterialRequestDTOTest {
 
     private MaterialRequestDTO material(Integer ano, String url, Integer licencas, List<Long> autoresIds) {
         return new MaterialRequestDTO("Dom Casmurro", TipoMaterial.LIVRO, ano, null, url, null, licencas,
-                1L, null, autoresIds);
+                1L, null, autoresIds, null);
+    }
+
+    @Test
+    void recusaUrlDeCapaInvalidaMasAceitaSemCapa() {
+        MaterialRequestDTO valido = material(1899, "https://acervo.escola.edu.br/a.pdf", 3, List.of(1L));
+        MaterialRequestDTO capaInvalida = new MaterialRequestDTO(valido.titulo(), valido.tipo(), valido.anoPublicacao(),
+                null, valido.urlArquivo(), null, valido.quantidadeLicencas(), 1L, null, List.of(1L), "capa.jpg");
+
+        assertThat(erros(capaInvalida)).containsExactly("A URL da capa deve ser uma URL válida");
+        assertThat(erros(valido)).isEmpty();
     }
 
     private Set<String> erros(MaterialRequestDTO dto) {

@@ -33,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -40,7 +41,8 @@ import java.util.Set;
  * <pre>./mvnw spring-boot:run -Dspring-boot.run.profiles=demo</pre>
  * <p>
  * Os livros são clássicos em domínio público do Project Gutenberg (dados obtidos pela API Gutendex,
- * gutendex.com), com o link real de leitura em urlArquivo; o número de páginas veio do Open Library.
+ * gutendex.com), com o link real de leitura em urlArquivo e a capa em urlCapa; o número de páginas veio do
+ * Open Library.
  * Os três materiais da "Editora Escolar (exemplo)" são fictícios, para mostrar apostila, vídeo e artigo.
  * <p>
  * As datas são relativas a hoje, então sempre há empréstimos ativos, um atrasado e um histórico de
@@ -267,14 +269,24 @@ public class DadosDemo implements ApplicationRunner {
         return autorRepository.save(autor);
     }
 
+    /** Livro do Project Gutenberg: link de leitura e capa (folha de rosto escaneada da edição original). */
     private Material livro(String titulo, int ano, int paginas, int licencas, Categoria categoria, int idGutenberg,
                            String sinopse, Autor autor) {
-        return material(titulo, TipoMaterial.LIVRO, ano, paginas, licencas, categoria, null,
+        Material livro = novoMaterial(titulo, TipoMaterial.LIVRO, ano, paginas, licencas, categoria, null,
                 GUTENBERG + idGutenberg, sinopse, autor);
+        livro.setUrlCapa("https://www.gutenberg.org/cache/epub/" + idGutenberg + "/pg" + idGutenberg + ".cover.medium.jpg");
+        return materialRepository.save(livro);
     }
 
     private Material material(String titulo, TipoMaterial tipo, int ano, Integer paginas, int licencas,
                               Categoria categoria, Editora editora, String url, String sinopse, Autor... autores) {
+        return materialRepository.save(
+                novoMaterial(titulo, tipo, ano, paginas, licencas, categoria, editora, url, sinopse, autores));
+    }
+
+    /** Monta o material sem salvar. A lista de autores precisa ser mutável: o Hibernate mexe nela. */
+    private Material novoMaterial(String titulo, TipoMaterial tipo, int ano, Integer paginas, int licencas,
+                                  Categoria categoria, Editora editora, String url, String sinopse, Autor... autores) {
         Material material = new Material();
         material.setTitulo(titulo);
         material.setTipo(tipo);
@@ -285,8 +297,8 @@ public class DadosDemo implements ApplicationRunner {
         material.setEditora(editora);
         material.setUrlArquivo(url);
         material.setSinopse(sinopse);
-        material.setAutores(Set.of(autores));
-        return materialRepository.save(material);
+        material.setAutores(new HashSet<>(Set.of(autores)));
+        return material;
     }
 
     private Usuario aluno(String nome, String matricula) {

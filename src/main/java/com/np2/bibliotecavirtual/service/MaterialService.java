@@ -90,6 +90,7 @@ public class MaterialService {
         material.setAnoPublicacao(dto.anoPublicacao());
         material.setSinopse(dto.sinopse() == null || dto.sinopse().isBlank() ? null : dto.sinopse().trim());
         material.setUrlArquivo(dto.urlArquivo().trim());
+        material.setUrlCapa(dto.urlCapa() == null || dto.urlCapa().isBlank() ? null : dto.urlCapa().trim());
         material.setNumeroPaginas(dto.numeroPaginas());
         material.setQuantidadeLicencas(dto.quantidadeLicencas());
         material.setCategoria(buscarCategoria(dto.categoriaId()));

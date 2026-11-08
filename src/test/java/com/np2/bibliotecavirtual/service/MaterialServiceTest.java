@@ -72,6 +72,7 @@ class MaterialServiceTest {
 
         assertThat(resposta.id()).isEqualTo(10L);
         assertThat(resposta.titulo()).isEqualTo("Dom Casmurro");
+        assertThat(resposta.urlCapa()).isEqualTo("https://acervo.escola.edu.br/capas/dom-casmurro.jpg");
         assertThat(resposta.categoria()).isEqualTo(new ResumoDTO(1L, "Literatura"));
         assertThat(resposta.editora()).isEqualTo(new ResumoDTO(1L, "Moderna"));
         // Autores voltam em ordem alfabética.
@@ -169,7 +170,8 @@ class MaterialServiceTest {
 
     private MaterialRequestDTO dto(Long categoriaId, Long editoraId, List<Long> autoresIds) {
         return new MaterialRequestDTO("  Dom Casmurro  ", TipoMaterial.LIVRO, 1899, "Bentinho e Capitu.",
-                "https://acervo.escola.edu.br/dom-casmurro.pdf", 256, 3, categoriaId, editoraId, autoresIds);
+                "https://acervo.escola.edu.br/dom-casmurro.pdf", 256, 3, categoriaId, editoraId, autoresIds,
+                "  https://acervo.escola.edu.br/capas/dom-casmurro.jpg  ");
     }
 
     private static Categoria categoria(Long id, String nome) {

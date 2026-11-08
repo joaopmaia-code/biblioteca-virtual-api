@@ -56,6 +56,10 @@ public class Material {
     @Column(name = "url_arquivo", nullable = false, length = 500)
     private String urlArquivo;
 
+    /** Imagem de capa (opcional, V43). */
+    @Column(name = "url_capa", length = 500)
+    private String urlCapa;
+
     @Column(name = "numero_paginas")
     private Integer numeroPaginas;
 
