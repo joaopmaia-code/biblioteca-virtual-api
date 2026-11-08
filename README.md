@@ -24,6 +24,8 @@ Repositório: https://github.com/joaopmaia-code/biblioteca-virtual-api
 - **Gamificação:** cada aluno tem um perfil de leitor com pontos, nível e conquistas, e há um ranking de leitores.
   Os pontos vêm de leituras concluídas, devoluções no prazo e avaliações.
 - O **Usuário** das aulas é reaproveitado e não conta como CRUD.
+- **Front-end** (opcional, em `frontend/`): telas web em React para o aluno (acervo, leituras, avaliações, perfil de
+  leitor e ranking) e para a equipe da biblioteca (empréstimos). Como rodar: [frontend/README.md](frontend/README.md).
 
 ## Stack
 
@@ -66,6 +68,14 @@ docker compose ps          # esperar o status ficar "healthy"
 ```
 
 Com a aplicação no ar, abra o Swagger: **http://localhost:8080/swagger-ui.html**
+
+Para usar as telas web, em outro terminal (precisa do Node.js 20+):
+
+```bash
+cd frontend
+npm install                # só na primeira vez
+npm run dev                # abre em http://localhost:5173
+```
 
 ```bash
 # Parar

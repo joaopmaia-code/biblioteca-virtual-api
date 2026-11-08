@@ -290,3 +290,33 @@ real pegou.
   pontos relendo o mesmo material. Exigir um tempo mínimo de leitura seria o próximo passo.
 - **Ranking com nome abreviado e sem quem tem 0 ponto:** são alunos de ensino médio; o ranking é geral porque
   o `Usuario` não tem turma.
+
+---
+
+## Pessoa 2 — 08/11/2026: front-end (branch `feature/front`)
+
+### Ferramenta
+
+- **Claude Code**, modelo **Claude Opus 5.5**, na extensão do VS Code. Commit e push ficam com o integrante,
+  depois de revisar os arquivos.
+
+### Como o trabalho foi conduzido
+
+| Etapa | Integrante | IA |
+|---|---|---|
+| Escopo | Decidiu fazer um front para a API, mesmo não sendo exigido | Levantou o que a API já oferecia e o que faltava (login, perfis de acesso) |
+| Identidade visual | Mandou a referência de logo (livro aberto com pixels) e pediu a navegação em abas abaixo do cabeçalho, sem sidebar | Desenhou um logo próprio a partir da ideia e as 8 telas no canvas de design |
+| Tecnologia | Aprovou React + Vite + TypeScript em `frontend/` | Montou o projeto, o proxy `/api` para o Spring e as telas |
+| Revisão e testes | Testa as telas no navegador | Rodou build com tipagem estrita, lint e chamadas reais pela API (proxy do Vite + backend + MySQL) |
+
+### Decisões que o integrante precisa saber explicar
+
+- **Proxy `/api` no Vite:** o front chama `/api/materiais` e o Vite repassa para `localhost:8080/materiais`.
+  Evita configurar CORS no backend e separa as rotas do front (`/ranking`, `/acervo`) das da API.
+- **Sem login:** a API não tem autenticação; a entrada só identifica o aluno pela matrícula e guarda o usuário
+  no `localStorage`. A área da equipe fica aberta porque o `Usuario` não tem perfil de acesso.
+- **`useCarregar`:** um hook que chama a API, guarda dados, erro e "carregando" e permite recarregar depois de
+  uma ação (devolver, avaliar), sem biblioteca extra.
+- **Sessão em contexto (`SessaoProvider`):** o aluno e o perfil de leitor ficam num contexto do React para o
+  cabeçalho mostrar os pontos em todas as telas e atualizar depois de cada ação.
+- **Capas geradas:** o acervo não tem imagens; cada material ganha um bloco colorido pelo ID.
