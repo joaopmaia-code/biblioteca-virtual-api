@@ -164,7 +164,7 @@ class MaterialServiceTest {
 
         assertThatThrownBy(() -> materialService.excluir(99L))
                 .isInstanceOf(RecursoNaoEncontradoException.class);
-        verify(materialRepository, never()).delete(any());
+        verify(materialRepository, never()).delete(any(Material.class));
     }
 
     private MaterialRequestDTO dto(Long categoriaId, Long editoraId, List<Long> autoresIds) {

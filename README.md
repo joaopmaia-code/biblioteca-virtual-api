@@ -13,7 +13,16 @@ Repositório: https://github.com/joaopmaia-code/biblioteca-virtual-api
   motivo de cada sugestão. (A ideia inicial era uma fila de espera; ela foi trocada pela recomendação, o plano B do
   planejamento. Ver [Requisitos](docs/REQUISITOS.md#funcionalidade-extra-recomendação-personalizada).)
 - **Regras de empréstimo:** só empresta com licença livre, prazo padrão de 14 dias, sem repetir material, até 3 ativos por
-  usuário, e os vencidos passam a `ATRASADO` automaticamente.
+  usuário, e os vencidos passam a `ATRASADO` automaticamente. Como o acervo é digital, o empréstimo é de uma **licença**
+  (a editora vende um número limitado de acessos simultâneos); cada material mostra quantas licenças estão livres.
+- **Busca no acervo:** `GET /materiais/busca` combina filtros (título, autor, categoria, editora, tipo, série, ano,
+  nota mínima e disponibilidade), ordena por título, ano ou avaliação e pagina o resultado.
+- **Avaliações:** o aluno dá nota de 1 a 5 e um comentário aos materiais que já pegou emprestado; a média e o total de
+  avaliações aparecem em cada material.
+- **Progresso de leitura:** o aluno registra a página em que parou em cada material que está com ele, e a API devolve o
+  percentual lido; `GET /usuarios/{id}/leituras` mostra tudo o que ele está lendo.
+- **Gamificação:** cada aluno tem um perfil de leitor com pontos, nível e conquistas, e há um ranking de leitores.
+  Os pontos vêm de leituras concluídas, devoluções no prazo e avaliações.
 - O **Usuário** das aulas é reaproveitado e não conta como CRUD.
 
 ## Stack
@@ -132,12 +141,15 @@ Em todas: `POST` devolve **201 Created** com o cabeçalho `Location`, `GET` e `P
 |---|---|---|
 | POST | `/materiais` | 400, 404 (categoria, editora ou autor inexistente) |
 | GET | `/materiais` (ordenado por título) | — |
+| GET | `/materiais/busca` (filtros, ordenação e paginação; ver abaixo) | 400 |
 | GET | `/materiais/{id}` | 404 |
 | PUT | `/materiais/{id}` | 400, 404 |
-| DELETE | `/materiais/{id}` | 404, 409 (tem empréstimos) |
+| DELETE | `/materiais/{id}` (as avaliações dele são apagadas junto) | 404, 409 (tem empréstimos) |
 
 Categoria e autores (pelo menos um) são obrigatórios e a editora é opcional. Todos são enviados pelo ID
-(`categoriaId`, `editoraId`, `autoresIds`) e voltam na resposta resumidos com `id` e `nome`. Exemplo de corpo:
+(`categoriaId`, `editoraId`, `autoresIds`) e voltam na resposta resumidos com `id` e `nome`. A resposta também traz
+`licencasDisponiveis`, `mediaAvaliacoes` (uma casa decimal; `null` sem avaliações) e `totalAvaliacoes`, calculados
+pelo banco a cada consulta. Exemplo de corpo:
 
 ```json
 {
@@ -153,6 +165,67 @@ Categoria e autores (pelo menos um) são obrigatórios e a editora é opcional. 
   "autoresIds": [1, 2]
 }
 ```
+
+**Busca no acervo** (Pessoa 2): `GET /materiais/busca`. Todos os parâmetros são opcionais e combinados com "e":
+
+| Parâmetro | Filtra por |
+|---|---|
+| `titulo` | Parte do título, sem diferenciar maiúsculas |
+| `autorId`, `categoriaId`, `editoraId` | Autor (qualquer um dos autores do material), categoria, editora |
+| `tipo` | `LIVRO`, `APOSTILA`, `ARTIGO` ou `VIDEO` |
+| `serie` | Série recomendada da categoria: `PRIMEIRO_ANO`, `SEGUNDO_ANO` ou `TERCEIRO_ANO` |
+| `anoMin`, `anoMax` | Ano de publicação entre (inclusive) |
+| `notaMinima` | Média das avaliações maior ou igual (1 a 5); materiais sem avaliação ficam de fora |
+| `disponivel` | `true`: só com licença livre agora; `false`: só os esgotados |
+| `ordenarPor` | `TITULO` (padrão), `ANO` (mais recentes primeiro) ou `AVALIACAO` (maior média primeiro) |
+| `pagina`, `tamanho` | Página (começa em 0) e itens por página (1 a 50, padrão 10) |
+
+Exemplo: `GET /materiais/busca?serie=TERCEIRO_ANO&disponivel=true&ordenarPor=AVALIACAO`. A resposta vem como
+`{ "conteudo": [...], "pagina": 0, "tamanho": 10, "totalElementos": 23, "totalPaginas": 3 }`.
+
+**Avaliações** (Pessoa 2)
+
+| Método | Rota | Erros possíveis |
+|---|---|---|
+| POST | `/avaliacoes` | 400 (nota fora de 1 a 5), 404 (usuário ou material inexistente), 409 (nunca pegou o material ou já avaliou) |
+| GET | `/avaliacoes` (filtros opcionais `?materialId=` e `?usuarioId=`; mais recentes primeiro) | 400 |
+| GET | `/avaliacoes/{id}` | 404 |
+| PUT | `/avaliacoes/{id}` (troca nota e comentário) | 400, 404 |
+| DELETE | `/avaliacoes/{id}` | 404 |
+
+Corpo do POST: `{ "usuarioId": 1, "materialId": 1, "nota": 5, "comentario": "Ótimo para o ENEM." }` (comentário opcional,
+até 1000 caracteres). Só avalia quem já pegou o material emprestado (qualquer status), e uma vez só por material.
+
+**Progresso de leitura** (Pessoa 2)
+
+| Método | Rota | Erros possíveis |
+|---|---|---|
+| PUT | `/emprestimos/{id}/progresso` (cria ou atualiza) | 400, 404 (empréstimo inexistente), 409 (já devolvido, material sem páginas ou página acima do total) |
+| GET | `/emprestimos/{id}/progresso` (página 0 se nunca registrou) | 404 |
+| GET | `/usuarios/{id}/leituras` (empréstimos ativos ou atrasados com o progresso de cada um) | 404 (usuário inexistente) |
+
+Corpo do PUT: `{ "paginaAtual": 120 }`. A resposta traz `paginaAtual`, `numeroPaginas`, `percentual` (ex.: `46.9`) e
+`concluido` (`true` na última página).
+
+**Gamificação** (Pessoa 2)
+
+| Método | Rota | Erros possíveis |
+|---|---|---|
+| GET | `/usuarios/{id}/perfil-leitor` (pontos, nível, extrato e conquistas) | 404 (usuário inexistente) |
+| GET | `/ranking` (`?limite=` de 1 a 50, padrão 10) | 400 |
+| GET | `/conquistas` (catálogo) | — |
+
+| Ação | Pontos |
+|---|---|
+| Terminar a leitura de um material (progresso na última página; cada material conta uma vez) | 10 |
+| Devolver um empréstimo até a data prevista | 3 |
+| Avaliar um material | 2 (+1 com comentário) |
+
+Níveis: Leitor Iniciante (0), Leitor (50), Leitor Voraz (150), Devorador de Livros (300) e Lenda da Biblioteca (500).
+Conquistas: Primeira Página, Maratonista (5 leituras), Explorador (3 categorias), Crítico (5 avaliações com comentário),
+Pontual (10 devoluções no prazo) e Clássico (material publicado antes de 1900). Nada é gravado: tudo é calculado a cada
+consulta. O ranking deixa de fora quem tem 0 ponto, mostra o nome abreviado (ex.: `Ana S.`) e põe empatados na mesma
+posição.
 
 **Autores** (Pessoa 1)
 
@@ -249,6 +322,7 @@ Os demais erros também seguem o mesmo formato:
 
 | Status | Quando |
 |---|---|
+| 400 | Parâmetro da URL fora do permitido (ex.: `/materiais/busca?tamanho=500`); `campos` diz qual parâmetro e por quê |
 | 404 | Rota que não existe (ex.: `GET /materiaisss`) |
 | 405 | Rota existe, mas não com esse método (ex.: `PATCH /categorias/1`); a mensagem lista os métodos aceitos |
 | 415 | Corpo enviado em outro formato que não `application/json` |
@@ -288,7 +362,11 @@ biblioteca-virtual-api/
 | `V10+` | Pessoa 1 |
 | `V20+` | Pessoa 2 |
 | `V30+` | Pessoa 3 |
+| `V40+` | Funcionalidades novas que dependem de Usuário/Empréstimo (Pessoa 2: avaliações e progresso de leitura) |
 
+- Uma migration com chave estrangeira precisa de número maior que a da tabela referenciada: num banco zerado o Flyway
+  aplica em ordem de versão. Por isso `avaliacoes` (`V40`) e `progressos_leitura` (`V41`), que dependem de `usuarios`
+  e `emprestimos` (`V30`/`V31`), não ficaram na `V2x`.
 - `spring.flyway.out-of-order=true` permite aplicar uma migration de número menor que chegue na `main` depois de uma maior.
 - **Nunca editar uma migration que já está na `main`**: criar uma nova.
 

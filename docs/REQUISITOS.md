@@ -96,6 +96,8 @@ nova, e o **Usuário** das aulas é reaproveitado sem contar como CRUD.
 | `Categoria` | `categorias` | `/categorias` |
 | `Emprestimo` | `emprestimos` | `/emprestimos` |
 | `Usuario` | `usuarios` | `/usuarios` |
+| `Avaliacao` | `avaliacoes` | `/avaliacoes` |
+| `ProgressoLeitura` | `progressos_leitura` | `/emprestimos/{id}/progresso` |
 | (ligação N:N) | `material_autor` | — |
 
 - Classes no singular, PascalCase e sem acento
@@ -180,6 +182,8 @@ erDiagram
 - Editora 1:N Material (opcional: um material pode não ter editora)
 - Material N:N Autor, pela tabela `material_autor`
 - Usuário 1:N Empréstimo e Material 1:N Empréstimo
+- Usuário 1:N Avaliação e Material 1:N Avaliação (uma avaliação por usuário e material)
+- Empréstimo 1:1 ProgressoLeitura (opcional: só existe depois que o aluno registra uma página)
 
 ## Requisitos funcionais
 
@@ -193,6 +197,10 @@ erDiagram
 | RF06 | Registrar, editar, listar, consultar por ID e excluir empréstimos |
 | RF07 | Registrar a devolução de um material emprestado |
 | RF08 | Recomendar a um usuário materiais parecidos com os do seu histórico de empréstimos |
+| RF09 | Buscar materiais no acervo combinando filtros (título, autor, categoria, editora, tipo, série, ano, nota mínima e disponibilidade), com ordenação e paginação |
+| RF10 | Avaliar um material (nota e comentário), editar, listar, consultar e excluir avaliações; mostrar a média e o total de avaliações de cada material |
+| RF11 | Registrar a página em que o aluno parou num material emprestado e consultar o percentual lido, por empréstimo ou de todas as leituras em andamento do aluno |
+| RF12 | Mostrar o perfil de leitor do aluno (pontos, nível e conquistas) e um ranking de leitores |
 
 ## Regras de negócio
 
@@ -207,6 +215,14 @@ erDiagram
 | RN07 | O CNPJ da editora e o nome da categoria devem ser únicos |
 | RN08 | A recomendação só sugere materiais que o usuário ainda não pegou emprestado |
 | RN09 | Cada material ganha +1 ponto por empréstimo anterior da mesma categoria e +2 por empréstimo anterior do mesmo autor; vão no máximo os 10 com mais pontos |
+| RN10 | A nota de uma avaliação vai de 1 a 5 |
+| RN11 | Só avalia um material quem já o pegou emprestado (em qualquer status) |
+| RN12 | Cada aluno avalia um mesmo material uma única vez (depois, só edita) |
+| RN13 | O progresso de leitura só pode ser registrado em empréstimo ATIVO ou ATRASADO |
+| RN14 | A página atual vai de 1 até o número de páginas do material; material sem número de páginas (ex.: vídeo) não tem progresso |
+| RN15 | Uma leitura só conta como concluída quando o progresso chega à última página, e cada material conta uma vez por aluno |
+| RN16 | Pontos: 10 por leitura concluída, 3 por devolução até a data prevista, 2 por avaliação e +1 se ela tiver comentário; ninguém perde pontos |
+| RN17 | O ranking mostra só alunos com pontos, com o nome abreviado; empatados ficam na mesma posição |
 
 ## Requisitos não funcionais
 
@@ -251,3 +267,46 @@ Usuário sem empréstimos recebe uma lista vazia; usuário inexistente, 404.
 **Demo:** cadastrar materiais de duas categorias e autores diferentes, emprestar dois livros do
 mesmo autor a um aluno e chamar a rota: o outro livro desse autor vem primeiro, depois os da
 mesma categoria.
+
+## Funcionalidades adicionais (Pessoa 2, 08/11)
+
+Adicionadas depois da entrega planejada para aproximar a API de uma biblioteca **digital**. O
+empréstimo continua: no acervo digital ele é o empréstimo de uma **licença** (a editora vende um
+número limitado de acessos simultâneos ao arquivo), que é o que `quantidadeLicencas` representa.
+
+| Funcionalidade | Rotas | Tabela nova |
+|---|---|---|
+| Busca no acervo (RF09) | `GET /materiais/busca` | — |
+| Avaliações (RF10, RN10–RN12) | `POST/GET /avaliacoes`, `GET/PUT/DELETE /avaliacoes/{id}` | `avaliacoes` (`V40`) |
+| Progresso de leitura (RF11, RN13–RN14) | `PUT/GET /emprestimos/{id}/progresso`, `GET /usuarios/{id}/leituras` | `progressos_leitura` (`V41`) |
+| Gamificação (RF12, RN15–RN17) | `GET /usuarios/{id}/perfil-leitor`, `GET /ranking`, `GET /conquistas` | — |
+
+Decisões:
+- **Campos calculados no Material:** `licencasDisponiveis`, `mediaAvaliacoes` e `totalAvaliacoes` não são
+  colunas; o Hibernate calcula com subconsultas (`@Formula`) na mesma consulta do material. Assim não há
+  valor duplicado para manter atualizado, e a busca consegue filtrar e ordenar por eles.
+- **Avaliação:** relação Usuário 1:N Avaliação e Material 1:N Avaliação, com `UNIQUE (usuario_id, material_id)`
+  (RN12) e `CHECK` da nota no banco, além das checagens no Service. Ao excluir o material ou o usuário, as
+  avaliações saem junto (`ON DELETE CASCADE`).
+- **Progresso de leitura:** tabela própria ligada 1:1 ao empréstimo (`UNIQUE emprestimo_id`), para não
+  alterar a entidade `Emprestimo` (da Pessoa 3). Ao excluir o empréstimo, o progresso sai junto.
+- **Migrations na `V40+`:** as duas tabelas referenciam `usuarios`/`emprestimos` (`V30`/`V31`); com número
+  `V2x` o Flyway as aplicaria antes, num banco zerado, e a chave estrangeira falharia.
+- **Busca em rota própria** (`/materiais/busca`), para não mudar o formato de `GET /materiais` (lista
+  simples), que outras partes e o README já usam. A paginação usa um formato próprio (`PaginaResponseDTO`)
+  em vez do `Page` do Spring, para o JSON ficar estável e em português.
+
+- **Gamificação calculada, sem tabela:** pontos, nível e conquistas saem de empréstimos, progresso e
+  avaliações a cada consulta. Os pontos nunca ficam desatualizados (excluir um empréstimo tira os pontos
+  dele) e não foi preciso alterar o código de Empréstimo para registrar eventos. O que se perde é a data em
+  que cada conquista foi desbloqueada.
+- **Limite conhecido:** o próprio aluno informa o progresso, então poderia pular para a última página.
+  Cada material conta uma vez só (RN15), o que impede acumular pontos relendo o mesmo; exigir um tempo
+  mínimo de leitura seria o próximo passo.
+- **Ranking geral, não por turma:** o `Usuario` não tem série nem turma; isso exigiria um campo novo na
+  entidade da Pessoa 3.
+
+**Demo:** com materiais cadastrados, buscar `?serie=TERCEIRO_ANO&disponivel=true`; emprestar um livro, registrar o
+progresso até a última página (`concluido: true`), avaliar o livro e ver a média em `GET /materiais/{id}`
+e na busca com `ordenarPor=AVALIACAO`; por fim, abrir `GET /usuarios/{id}/perfil-leitor` (conquistas
+*Primeira Página* e, se o livro for anterior a 1900, *Clássico*) e `GET /ranking`.

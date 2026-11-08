@@ -39,17 +39,30 @@ public record MaterialResponseDTO(
         @Schema(example = "3")
         Integer quantidadeLicencas,
 
+        @Schema(description = "Licenças livres agora (total menos as ocupadas por empréstimos ativos ou atrasados)",
+                example = "1")
+        Integer licencasDisponiveis,
+
         ResumoDTO categoria,
 
         @Schema(description = "Editora (null quando o material não tem editora)")
         ResumoDTO editora,
 
         @Schema(description = "Autores em ordem alfabética")
-        List<ResumoDTO> autores
+        List<ResumoDTO> autores,
+
+        @Schema(description = "Média das notas, com uma casa decimal (null quando ninguém avaliou)", example = "4.5")
+        Double mediaAvaliacoes,
+
+        @Schema(description = "Quantidade de avaliações", example = "2")
+        Long totalAvaliacoes
 ) {
 
     public static MaterialResponseDTO de(Material material) {
         Editora editora = material.getEditora();
+        // Os campos calculados (@Formula) vêm null num material que acabou de ser cadastrado.
+        long licencasEmUso = material.getLicencasEmUso() == null ? 0 : material.getLicencasEmUso();
+        Double media = material.getMediaAvaliacoes();
 
         return new MaterialResponseDTO(
                 material.getId(),
@@ -60,11 +73,15 @@ public record MaterialResponseDTO(
                 material.getUrlArquivo(),
                 material.getNumeroPaginas(),
                 material.getQuantidadeLicencas(),
+                material.getQuantidadeLicencas() == null ? null
+                        : (int) Math.max(0, material.getQuantidadeLicencas() - licencasEmUso),
                 new ResumoDTO(material.getCategoria().getId(), material.getCategoria().getNome()),
                 editora == null ? null : new ResumoDTO(editora.getId(), editora.getNome()),
                 material.getAutores().stream()
                         .sorted(Comparator.comparing(Autor::getNome))
                         .map(autor -> new ResumoDTO(autor.getId(), autor.getNome()))
-                        .toList());
+                        .toList(),
+                media == null ? null : Math.round(media * 10) / 10.0,
+                material.getTotalAvaliacoes() == null ? 0L : material.getTotalAvaliacoes());
     }
 }
