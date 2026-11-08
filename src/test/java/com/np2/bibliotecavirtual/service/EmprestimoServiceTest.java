@@ -79,7 +79,7 @@ class EmprestimoServiceTest {
 
         assertThatThrownBy(() -> emprestimoService.registrar(new EmprestimoRequestDTO(1L, 10L, null)))
                 .isInstanceOf(RegraNegocioException.class)
-                .hasMessage("Sem licenças disponíveis. Entre na fila de espera.");
+                .hasMessage("Sem licenças disponíveis no momento. Tente de novo quando alguém devolver.");
         verify(emprestimoRepository, never()).save(any());
     }
 

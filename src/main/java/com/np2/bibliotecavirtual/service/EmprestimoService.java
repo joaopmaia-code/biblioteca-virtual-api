@@ -13,6 +13,7 @@ import com.np2.bibliotecavirtual.repository.EmprestimoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -28,14 +29,21 @@ public class EmprestimoService {
     private final UsuarioService usuarioService;
     private final EmprestimoRegras regras;
 
-    /** RF06 com RN01 (licença livre), RN02 (prazo padrão), RN03 (sem repetir material) e RN04 (limite). */
-    @Transactional
+    /**
+     * RF06 com RN01 (licença livre), RN02 (prazo padrão), RN03 (sem repetir material) e RN04 (limite).
+     * <p>
+     * READ_COMMITTED: no padrão do MySQL (REPEATABLE READ), a transação "fotografa" o banco na primeira
+     * leitura (a do usuário), antes de esperar a trava do material. Aí, com dois pedidos ao mesmo tempo
+     * pela última licença, o segundo contava as licenças na foto antiga e também era aceito. Com
+     * READ_COMMITTED, a contagem feita depois da trava já enxerga o empréstimo gravado pelo primeiro.
+     */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public EmprestimoResponseDTO registrar(EmprestimoRequestDTO dto) {
         Usuario usuario = usuarioService.buscarUsuario(dto.usuarioId());
         Material material = buscarMaterialComTrava(dto.materialId());
 
         if (regras.licencasDisponiveis(material) <= 0) {
-            throw new RegraNegocioException("Sem licenças disponíveis. Entre na fila de espera.");
+            throw new RegraNegocioException("Sem licenças disponíveis no momento. Tente de novo quando alguém devolver.");
         }
         if (regras.jaTemEmprestado(usuario, material)) {
             throw new RegraNegocioException("O usuário já está com este material emprestado");

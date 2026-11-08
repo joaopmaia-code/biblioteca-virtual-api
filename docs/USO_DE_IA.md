@@ -220,6 +220,35 @@ Observação: e-mail com espaços nas pontas é recusado pelo `@Email` (400) ant
 
 ---
 
+## Pessoa 2 — 08/11/2026: o papel do integrante
+
+As três seções a seguir registram o dia 08/11, em que a IA foi usada como assistente numa conversa contínua.
+O integrante conduziu o trabalho: as decisões de produto, de escopo e de processo abaixo foram dele, e a IA
+executou, propôs alternativas e verificou.
+
+**Direção do produto**
+- Percebeu que, numa biblioteca **digital**, a API só com empréstimo ficava pobre, e decidiu ampliar o projeto.
+- Decidiu **manter** o Empréstimo (CRUD obrigatório, que no acervo digital representa o empréstimo de uma licença).
+- Escolheu as funcionalidades novas (busca no acervo, avaliações e progresso de leitura) entre as opções
+  discutidas, e depois teve a ideia da **gamificação** e aprovou pontos, níveis, conquistas e ranking.
+- Decidiu fazer o **front-end** e trouxe a referência visual do logo (livro aberto com pixels).
+- Definiu a navegação do front: abas logo abaixo do cabeçalho, sem sidebar.
+- Pediu um **seed com dados reais** vindos de uma API, o que levou aos livros do Project Gutenberg.
+
+**Qualidade e revisão**
+- Definiu que nada seria commitado sem passar pela revisão dele.
+- Pediu para conferir se a parte da Pessoa 3 funcionava. Essa revisão encontrou o bug de concorrência da RN01.
+- Decidiu separar a correção do código da colega e fazer ele mesmo esse commit, avisando a Pessoa 3.
+
+**Processo e entrega**
+- Conferiu com o professor o novo prazo (08/11) e repriorizou o dia: parar de criar funcionalidades e fechar a
+  entrega (seed, documentação, revisão).
+- Organizou as branches (`joao-dev`, `feature/front`, `feature/seed`), decidiu juntar as mudanças pendentes num
+  único commit, fez os commits e abriu e mergeou os PRs (PR #12 e o PR do front).
+- Pediu o roadmap atualizado com o estado real do projeto e as pendências de cada integrante.
+
+---
+
 ## Pessoa 2 — 08/11/2026: busca no acervo, avaliações, progresso de leitura e gamificação
 
 ### Ferramenta
@@ -243,7 +272,7 @@ O trabalho foi feito em conjunto, com o integrante conduzindo e a IA auxiliando:
 |---|---|---|
 | Escopo | Definiu o problema, escolheu as 4 funcionalidades e manteve o empréstimo | Sugeriu opções e explicou os prós e contras de cada uma |
 | Desenho | Aprovou rotas, regras (RN10–RN17), pontos, níveis e conquistas | Propôs o desenho e alertou para os limites (ranking sem turma, progresso informado pelo aluno) |
-| Código | Revisa cada arquivo antes do commit | Escreveu migrations `V40`/`V41`, entidades, DTOs, repositories, services, controllers e o tratamento de parâmetro inválido no `GlobalExceptionHandler` |
+| Código | Revisa cada arquivo antes do commit; fez o commit e abriu e mergeou o PR #12 | Escreveu migrations `V40`/`V41`, entidades, DTOs, repositories, services, controllers e o tratamento de parâmetro inválido no `GlobalExceptionHandler` |
 | Testes | Testa os fluxos no Swagger | Escreveu `AvaliacaoServiceTest`, `ProgressoLeituraServiceTest`, `GamificacaoServiceTest` e um teste no `GlobalExceptionHandlerTest`; rodou os testes de ponta a ponta |
 | Documentação | Revisa | Atualizou README, REQUISITOS, ROADMAP, `CLAUDE.md` e rascunhou este registro |
 
@@ -320,3 +349,36 @@ real pegou.
 - **Sessão em contexto (`SessaoProvider`):** o aluno e o perfil de leitor ficam num contexto do React para o
   cabeçalho mostrar os pontos em todas as telas e atualizar depois de cada ação.
 - **Capas geradas:** o acervo não tem imagens; cada material ganha um bloco colorido pelo ID.
+
+---
+
+## Pessoa 2 — 08/11/2026: seed de demonstração e revisão do Empréstimo
+
+### Ferramenta
+
+- **Claude Code**, modelo **Claude Opus 5.5**, na extensão do VS Code. Commit e push ficam com o integrante.
+
+### Como o trabalho foi conduzido
+
+| Etapa | Integrante | IA |
+|---|---|---|
+| Seed | Pediu dados de demonstração, de preferência de uma API real | Encontrou o Gutendex (Project Gutenberg) e o Open Library, buscou títulos e páginas e escreveu o `DadosDemo` |
+| Revisão do Empréstimo | Pediu para conferir se a parte da Pessoa 3 funcionava | Testou 31 cenários de Usuário e Empréstimo contra o MySQL e um teste de concorrência, que achou o bug da RN01 |
+| Correção | Decide se entra (código da Pessoa 3, avisar no grupo) | Propôs e aplicou `READ_COMMITTED` em `registrar` e trocou a mensagem da fila de espera |
+
+### Como o resultado foi verificado
+
+| O quê | Resultado |
+|---|---|
+| Seed num MySQL vazio | 20 materiais, 8 alunos, 28 empréstimos (2 atrasados), 16 avaliações; ranking, conquistas e recomendações coerentes; links do Gutenberg abrem |
+| Usuário e Empréstimo | 31 cenários (RN01–RN05, filtros, renovar, devolver, excluir, unicidade, 400/404/409): todos certos |
+| Concorrência na RN01 | Antes: dois pedidos simultâneos pela última licença eram aceitos (3 empréstimos para 2 licenças). Depois: em 5 rodadas com 4 pedidos simultâneos, sempre 1 aceito e 3 recusados |
+| Projeto todo | `mvnw test`: 99 testes, 0 falhas |
+
+### Decisões que o integrante precisa saber explicar
+
+- **Seed por perfil (`demo`) em Java, e não migration:** só roda quando pedido, não duplica dados (se o banco não
+  está vazio, não faz nada) e usa datas relativas a hoje, então a demo sempre tem empréstimo ativo e atrasado.
+- **Por que o bug acontecia:** no MySQL (REPEATABLE READ), a transação "fotografa" o banco na primeira leitura.
+  Ela lia o usuário antes de esperar a trava do material; depois da trava, contava as licenças na foto antiga.
+  Com `READ_COMMITTED`, cada leitura vê o que já foi gravado, e a trava passa a proteger de verdade.

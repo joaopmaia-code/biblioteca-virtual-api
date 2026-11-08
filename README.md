@@ -69,6 +69,24 @@ docker compose ps          # esperar o status ficar "healthy"
 
 Com a aplicação no ar, abra o Swagger: **http://localhost:8080/swagger-ui.html**
 
+### Dados de demonstração (seed)
+
+Para a apresentação, suba com o perfil `demo`. Num banco vazio, ele cadastra 4 categorias, 12 autores, 20 materiais,
+8 alunos e um histórico de 28 empréstimos (ativos, 2 atrasados e devolvidos), progresso de leitura e 16 avaliações,
+com datas relativas a hoje. Se o banco já tiver usuários ou materiais, o seed não faz nada.
+
+```bash
+docker compose down -v && docker compose up -d                    # banco zerado
+./mvnw spring-boot:run -Dspring-boot.run.profiles=demo              # Linux/macOS/Git Bash
+mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=demo"          # Windows (PowerShell/CMD)
+```
+
+Os 16 livros são clássicos em domínio público do [Project Gutenberg](https://www.gutenberg.org) (dados obtidos pela
+API [Gutendex](https://gutendex.com)), com o link real de leitura em `urlArquivo`; o número de páginas veio do
+[Open Library](https://openlibrary.org). Os 4 materiais da "Editora Escolar (exemplo)" são fictícios, para mostrar
+apostila, vídeo e artigo. Matrículas para testar: `2026A0142` (Ana, com um empréstimo atrasado) e `2026A0101`
+(Carla, 1ª do ranking). O seed fica em `config/DadosDemo.java`.
+
 Para usar as telas web, em outro terminal (precisa do Node.js 20+):
 
 ```bash
