@@ -11,12 +11,26 @@ import type {
   ProgressoLeitura,
   Recomendacao,
   RespostaDeErro,
+  RespostaLogin,
   StatusEmprestimo,
   Usuario,
 } from './tipos'
 
 /** Em desenvolvimento o Vite repassa /api para o Spring (vite.config.ts). */
 const BASE = import.meta.env.VITE_API_BASE ?? '/api'
+
+/** Token JWT do login, enviado em todas as chamadas (Authorization: Bearer ...). Definido pela sessão. */
+let token: string | null = null
+/** Chamado quando a API responde 401 com um token (expirou ou é inválido): a sessão faz o logout. */
+let aoExpirar: (() => void) | null = null
+
+export function definirToken(novo: string | null) {
+  token = novo
+}
+
+export function definirAoExpirar(acao: (() => void) | null) {
+  aoExpirar = acao
+}
 
 /** Erro devolvido pela API, já com a mensagem do ErroResponseDTO. */
 export class ErroDaApi extends Error {
@@ -48,15 +62,24 @@ function query(parametros: Record<string, ValorDeQuery>): string {
 }
 
 async function requisitar<T>(metodo: string, caminho: string, corpo?: unknown): Promise<T> {
+  const cabecalhos: Record<string, string> = {}
+  if (corpo !== undefined) cabecalhos['Content-Type'] = 'application/json'
+  if (token) cabecalhos.Authorization = `Bearer ${token}`
+
   let resposta: Response
   try {
     resposta = await fetch(BASE + caminho, {
       method: metodo,
-      headers: corpo === undefined ? undefined : { 'Content-Type': 'application/json' },
+      headers: cabecalhos,
       body: corpo === undefined ? undefined : JSON.stringify(corpo),
     })
   } catch {
     throw new ErroDaApi(0, SEM_CONEXAO)
+  }
+
+  // Token vencido ou inválido: encerra a sessão (o login em si não entra aqui, pois vai sem token).
+  if (resposta.status === 401 && token) {
+    aoExpirar?.()
   }
 
   if (resposta.status === 204) {
@@ -94,6 +117,11 @@ export function mensagemDeErro(erro: unknown): string {
 
 /** Cada função corresponde a uma rota da API. */
 export const api = {
+  login: (matricula: string, senha: string) => requisitar<RespostaLogin>('POST', '/auth/login', { matricula, senha }),
+  eu: () => requisitar<Usuario>('GET', '/auth/eu'),
+  trocarSenha: (senhaAtual: string, novaSenha: string) =>
+    requisitar<void>('PUT', '/auth/senha', { senhaAtual, novaSenha }),
+
   usuarios: () => requisitar<Usuario[]>('GET', '/usuarios'),
   categorias: () => requisitar<Categoria[]>('GET', '/categorias'),
 

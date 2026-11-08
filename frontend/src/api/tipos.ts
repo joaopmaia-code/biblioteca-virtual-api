@@ -50,11 +50,22 @@ export interface Categoria {
   serieRecomendada: SerieRecomendada
 }
 
+export type PerfilUsuario = 'ALUNO' | 'PROFESSOR' | 'BIBLIOTECARIO'
+
 export interface Usuario {
   id: number
   nome: string
   email: string
   matricula: string
+  perfil: PerfilUsuario
+}
+
+/** Resposta de POST /auth/login. */
+export interface RespostaLogin {
+  token: string
+  tipo: string
+  expiraEmSegundos: number
+  usuario: Usuario
 }
 
 export interface Emprestimo {

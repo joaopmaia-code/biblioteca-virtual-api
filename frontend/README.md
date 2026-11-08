@@ -27,7 +27,7 @@ Outros comandos: `npm run build` (confere os tipos e gera `dist/`) e `npm run li
 
 | Rota | Tela | Rotas da API usadas |
 |---|---|---|
-| `/` | Entrada pela matrícula (aluno) ou acesso da equipe | `GET /usuarios` |
+| `/` | Login com matrícula e senha (o bibliotecário vai direto para o painel) | `POST /auth/login` |
 | `/inicio` | Continue lendo, nível e recomendações | `/usuarios/{id}/leituras`, `/perfil-leitor`, `/recomendacoes` |
 | `/acervo` | Busca com filtros, ordenação e paginação | `/materiais/busca`, `/categorias` |
 | `/materiais/:id` | Material, empréstimo e avaliações | `/materiais/{id}`, `POST /emprestimos`, `/avaliacoes` |
@@ -37,12 +37,17 @@ Outros comandos: `npm run build` (confere os tipos e gera `dist/`) e `npm run li
 | `/equipe` | Empréstimos de todos os alunos, novo empréstimo, atrasados | `/emprestimos`, `/materiais`, `/emprestimos/atualizar-atrasados` |
 | `/equipe/acervo` | Licenças e avaliações de cada material | `/materiais` |
 
+## Login e perfis
+
+- O login (`POST /auth/login`) devolve um token JWT, que o front guarda no navegador e envia em todas as chamadas
+  (`Authorization: Bearer ...`). Se a API responder 401 (token vencido), o front volta para a tela de entrada.
+- **Aluno:** a área do leitor. **Professor:** a área do leitor e o painel da equipe, só para consultar.
+  **Bibliotecário:** entra direto no painel e registra, renova e devolve empréstimos de qualquer aluno.
+- Esconder botões no front é só conforto: quem garante as permissões é a API (`SegurancaConfig`).
+
 ## Limites conhecidos
 
-- **Sem login de verdade:** a API não tem autenticação. A entrada só identifica o aluno pela
-  matrícula (procurando em `GET /usuarios`) e guarda o usuário no navegador.
-- **Área da equipe aberta:** o `Usuario` não tem perfil de acesso, então qualquer um entra em `/equipe`.
-- Cadastros de materiais, autores, editoras e categorias continuam pelo Swagger.
+- Cadastros de materiais, autores, editoras, categorias e usuários continuam pelo Swagger.
 
 ## Estrutura
 

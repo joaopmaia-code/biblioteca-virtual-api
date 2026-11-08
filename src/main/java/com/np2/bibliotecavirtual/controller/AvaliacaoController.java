@@ -4,6 +4,7 @@ import com.np2.bibliotecavirtual.dto.AvaliacaoAtualizacaoDTO;
 import com.np2.bibliotecavirtual.dto.AvaliacaoRequestDTO;
 import com.np2.bibliotecavirtual.dto.AvaliacaoResponseDTO;
 import com.np2.bibliotecavirtual.dto.ErroResponseDTO;
+import com.np2.bibliotecavirtual.seguranca.UsuarioLogado;
 import com.np2.bibliotecavirtual.service.AvaliacaoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -37,6 +38,7 @@ import java.util.List;
 public class AvaliacaoController {
 
     private final AvaliacaoService avaliacaoService;
+    private final UsuarioLogado usuarioLogado;
 
     @PostMapping
     @Operation(summary = "Avaliar material",
@@ -53,6 +55,8 @@ public class AvaliacaoController {
                     content = @Content(schema = @Schema(implementation = ErroResponseDTO.class)))
     })
     public ResponseEntity<AvaliacaoResponseDTO> cadastrar(@Valid @RequestBody AvaliacaoRequestDTO dto) {
+        // Ninguém avalia em nome de outro, nem o bibliotecário (403).
+        usuarioLogado.garantirQueEhOProprio(dto.usuarioId());
         AvaliacaoResponseDTO criada = avaliacaoService.cadastrar(dto);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")

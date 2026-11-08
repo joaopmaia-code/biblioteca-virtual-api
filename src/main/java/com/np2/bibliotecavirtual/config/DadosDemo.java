@@ -6,6 +6,7 @@ import com.np2.bibliotecavirtual.model.Categoria;
 import com.np2.bibliotecavirtual.model.Editora;
 import com.np2.bibliotecavirtual.model.Emprestimo;
 import com.np2.bibliotecavirtual.model.Material;
+import com.np2.bibliotecavirtual.model.PerfilUsuario;
 import com.np2.bibliotecavirtual.model.ProgressoLeitura;
 import com.np2.bibliotecavirtual.model.SerieRecomendada;
 import com.np2.bibliotecavirtual.model.StatusEmprestimo;
@@ -24,6 +25,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,11 +50,17 @@ import java.util.Set;
 @Slf4j
 @Component
 @Profile("demo")
+@Order(1) // antes do BibliotecarioInicial, que não faz nada se o seed já criou uma bibliotecária
 @RequiredArgsConstructor
 public class DadosDemo implements ApplicationRunner {
 
     private static final int PRAZO_DIAS = 14;
     private static final String GUTENBERG = "https://www.gutenberg.org/ebooks/";
+    /** Senha de todos os usuários do seed (só para a demonstração). */
+    private static final String SENHA_DEMO = "senha123";
+
+    private final PasswordEncoder passwordEncoder;
+    private String hashSenhaDemo;
 
     private final CategoriaRepository categoriaRepository;
     private final AutorRepository autorRepository;
@@ -178,7 +187,8 @@ public class DadosDemo implements ApplicationRunner {
                 editoraEscolar, "https://escola.example.com/acervo/os-sertoes-em-sala.pdf",
                 "Guia de leitura com contexto histórico da Guerra de Canudos.", equipePortugues);
 
-        // ----- Alunos -----
+        // ----- Usuários (todos com a senha "senha123") -----
+        hashSenhaDemo = passwordEncoder.encode(SENHA_DEMO);
         Usuario ana = aluno("Ana Souza", "2026A0142");
         Usuario bruno = aluno("Bruno Lima", "2026A0150");
         Usuario carla = aluno("Carla Mendes", "2026A0101");
@@ -187,6 +197,8 @@ public class DadosDemo implements ApplicationRunner {
         Usuario rafael = aluno("Rafael Torres", "2026A0131");
         Usuario marina = aluno("Marina Costa", "2026A0138");
         aluno("Diego Fernandes", "2026A0160"); // sem histórico: mostra as telas vazias e fica fora do ranking
+        usuario("Helena Martins", "PROF01", PerfilUsuario.PROFESSOR);
+        usuario("Rosa Almeida", "BIB01", PerfilUsuario.BIBLIOTECARIO);
 
         // ----- Histórico: emprestimo(aluno, material, retirado há N dias, devolvido após N dias ou null, página) -----
         // Carla: 6 leituras concluídas em 3 categorias, todas devolvidas no prazo, 5 avaliações com comentário.
@@ -231,8 +243,8 @@ public class DadosDemo implements ApplicationRunner {
         emprestimo(rafael, policarpo, 16, null, 80);
         emprestimo(rafael, geometria, 1, null, null);
 
-        log.info("Perfil demo: seed carregado ({} materiais, {} alunos, {} empréstimos, {} avaliações). "
-                        + "Entre no front com a matrícula 2026A0142 (Ana Souza).",
+        log.info("Perfil demo: seed carregado ({} materiais, {} usuários, {} empréstimos, {} avaliações). "
+                        + "Senha de todos: senha123. Aluna: 2026A0142 (Ana); professora: PROF01; bibliotecária: BIB01.",
                 materialRepository.count(), usuarioRepository.count(), emprestimoRepository.count(),
                 avaliacaoRepository.count());
     }
@@ -278,6 +290,10 @@ public class DadosDemo implements ApplicationRunner {
     }
 
     private Usuario aluno(String nome, String matricula) {
+        return usuario(nome, matricula, PerfilUsuario.ALUNO);
+    }
+
+    private Usuario usuario(String nome, String matricula, PerfilUsuario perfil) {
         String primeiro = nome.split(" ")[0].toLowerCase()
                 .replace("ú", "u").replace("á", "a").replace("é", "e").replace("í", "i");
         String ultimo = nome.substring(nome.lastIndexOf(' ') + 1).toLowerCase();
@@ -285,6 +301,8 @@ public class DadosDemo implements ApplicationRunner {
         usuario.setNome(nome);
         usuario.setEmail(primeiro + "." + ultimo + "@escola.example.com");
         usuario.setMatricula(matricula);
+        usuario.setPerfil(perfil);
+        usuario.setSenhaHash(hashSenhaDemo);
         return usuarioRepository.save(usuario);
     }
 

@@ -21,9 +21,9 @@ function classeDaAba({ isActive }: { isActive: boolean }) {
   return isActive ? 'aba aba-ativa' : 'aba'
 }
 
-/** Área do aluno: cabeçalho, abas logo abaixo e a tela. Sem aluno identificado, volta para a entrada. */
+/** Área do leitor (aluno, e também professor e bibliotecário quando pegam materiais). Sem login, volta para a entrada. */
 export function AreaAluno() {
-  const { usuario, perfil, sair } = useSessao()
+  const { usuario, perfil, ehEquipe, sair } = useSessao()
   const navegar = useNavigate()
 
   if (!usuario) {
@@ -38,6 +38,11 @@ export function AreaAluno() {
           <span className="marca-nome">BIBLIOTECA VIRTUAL</span>
         </Link>
         <div className="cabecalho-acoes">
+          {ehEquipe && (
+            <Link to="/equipe" className="botao botao-secundario botao-pequeno">
+              Painel da equipe
+            </Link>
+          )}
           {perfil && (
             <Link to="/perfil" className="chip-pontos">
               <Estrela />
@@ -71,8 +76,21 @@ export function AreaAluno() {
   )
 }
 
-/** Área da equipe da biblioteca. A API não tem perfis de acesso, então não há bloqueio aqui. */
+/**
+ * Painel da equipe: só professor e bibliotecário. A API também recusa (403) o que o perfil não pode,
+ * então este bloqueio é só para não mostrar telas inúteis.
+ */
 export function AreaEquipe() {
+  const { usuario, ehEquipe, sair } = useSessao()
+  const navegar = useNavigate()
+
+  if (!usuario) {
+    return <Navigate to="/" replace />
+  }
+  if (!ehEquipe) {
+    return <Navigate to="/inicio" replace />
+  }
+
   return (
     <>
       <header className="cabecalho cabecalho-escuro">
@@ -83,9 +101,24 @@ export function AreaEquipe() {
             <span className="marca-sub">Painel da equipe</span>
           </span>
         </Link>
-        <Link to="/" className="botao botao-fantasma botao-fantasma-claro">
-          Sair
-        </Link>
+        <div className="cabecalho-acoes">
+          <span className="texto-claro-suave">
+            {usuario.nome} · {usuario.perfil === 'BIBLIOTECARIO' ? 'Bibliotecário(a)' : 'Professor(a)'}
+          </span>
+          <Link to="/inicio" className="botao botao-fantasma botao-fantasma-claro">
+            Área do leitor
+          </Link>
+          <button
+            type="button"
+            className="botao botao-fantasma botao-fantasma-claro"
+            onClick={() => {
+              sair()
+              navegar('/')
+            }}
+          >
+            Sair
+          </button>
+        </div>
       </header>
       <nav className="abas" aria-label="Gestão">
         {ABAS_EQUIPE.map((aba) => (

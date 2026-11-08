@@ -3,6 +3,7 @@ import { api, mensagemDeErro } from '../../api/cliente'
 import type { Emprestimo, StatusEmprestimo } from '../../api/tipos'
 import { Carregando, MensagemErro, Retorno, SeloStatus, Vazio } from '../../componentes/Basicos'
 import { useCarregar } from '../../hooks/useCarregar'
+import { useSessao } from '../../sessao/contexto'
 import { dataCurta, hojeMais, plural } from '../../util/formato'
 
 type Filtro = 'TODOS' | StatusEmprestimo
@@ -15,6 +16,8 @@ const FILTROS: { id: Filtro; rotulo: string }[] = [
 ]
 
 export function PainelEmprestimos() {
+  // Professor só acompanha; registrar, renovar e devolver por outro aluno é do bibliotecário.
+  const { ehBibliotecario } = useSessao()
   const emprestimos = useCarregar(() => api.emprestimos(), [])
   const materiais = useCarregar(() => api.materiais(), [])
   const [filtro, setFiltro] = useState<Filtro>('TODOS')
@@ -60,8 +63,13 @@ export function PainelEmprestimos() {
       <section className="linha-titulo">
         <div>
           <h1 className="titulo-pagina">Empréstimos</h1>
-          <p className="texto-suave">Os atrasados também são marcados sozinhos a cada hora.</p>
+          <p className="texto-suave">
+            {ehBibliotecario
+              ? 'Os atrasados também são marcados sozinhos a cada hora.'
+              : 'Acompanhamento dos empréstimos. Registrar, renovar e devolver fica com a biblioteca.'}
+          </p>
         </div>
+        {ehBibliotecario && (
         <div className="linha linha-quebra">
           <button
             type="button"
@@ -83,6 +91,7 @@ export function PainelEmprestimos() {
             {mostrarNovo ? 'Fechar' : 'Novo empréstimo'}
           </button>
         </div>
+        )}
       </section>
 
       {mostrarNovo && (
@@ -164,7 +173,7 @@ export function PainelEmprestimos() {
                       <SeloStatus status={e.status} />
                     </td>
                     <td className="direita sem-quebra">
-                      {e.status !== 'DEVOLVIDO' && (
+                      {ehBibliotecario && e.status !== 'DEVOLVIDO' && (
                         <>
                           <button type="button" className="botao botao-secundario botao-pequeno" disabled={ocupado} onClick={() => renovar(e)}>
                             Renovar

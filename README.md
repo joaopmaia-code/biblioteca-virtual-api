@@ -27,6 +27,9 @@ na branch `main`. O hash do commit aparece com `git rev-parse np2-entrega`.
 - **Gamificação:** cada aluno tem um perfil de leitor com pontos, nível e conquistas, e há um ranking de leitores.
   Os pontos vêm de leituras concluídas, devoluções no prazo e avaliações.
 - O **Usuário** das aulas é reaproveitado e não conta como CRUD.
+- **Autenticação e perfis:** login com matrícula e senha (token JWT, senha guardada com BCrypt) e três perfis,
+  `ALUNO`, `PROFESSOR` e `BIBLIOTECARIO`, cada um com as suas permissões. Consultar o acervo não exige login.
+  Detalhes em [Autenticação e perfis](#autenticação-e-perfis).
 - **Front-end** (opcional, em `frontend/`): telas web em React para o aluno (acervo, leituras, avaliações, perfil de
   leitor e ranking) e para a equipe da biblioteca (empréstimos). Como rodar: [frontend/README.md](frontend/README.md).
 
@@ -43,6 +46,7 @@ na branch `main`. O hash do commit aparece com `git rev-parse np2-entrega`.
 | MySQL 8.4 (Docker) | Banco de dados |
 | Lombok | Getters, setters e construtores |
 | springdoc-openapi 2.9.1 | Swagger UI e documento OpenAPI |
+| Spring Security + OAuth2 Resource Server | Login, token JWT (HS256), senhas com BCrypt e permissões por perfil |
 | Maven Wrapper (Maven 3.9.16) | Build sem precisar instalar o Maven |
 
 ## Pré-requisitos
@@ -87,8 +91,16 @@ mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=demo"          # Windows (P
 Os 16 livros são clássicos em domínio público do [Project Gutenberg](https://www.gutenberg.org) (dados obtidos pela
 API [Gutendex](https://gutendex.com)), com o link real de leitura em `urlArquivo`; o número de páginas veio do
 [Open Library](https://openlibrary.org). Os 4 materiais da "Editora Escolar (exemplo)" são fictícios, para mostrar
-apostila, vídeo e artigo. Matrículas para testar: `2026A0142` (Ana, com um empréstimo atrasado) e `2026A0101`
-(Carla, 1ª do ranking). O seed fica em `config/DadosDemo.java`.
+apostila, vídeo e artigo. O seed fica em `config/DadosDemo.java`.
+
+Usuários do seed (a senha de todos é `senha123`):
+
+| Matrícula | Quem | Perfil |
+|---|---|---|
+| `2026A0142` | Ana Souza, com um empréstimo atrasado | ALUNO |
+| `2026A0101` | Carla Mendes, 1ª do ranking | ALUNO |
+| `PROF01` | Helena Martins | PROFESSOR |
+| `BIB01` | Rosa Almeida | BIBLIOTECARIO |
 
 Para usar as telas web, em outro terminal (precisa do Node.js 20+):
 
@@ -148,6 +160,37 @@ docker compose up -d
 
 Precisa do MySQL rodando: o teste `contextLoads` sobe a aplicação inteira e confirma que o Flyway aplica as
 migrations e que o Hibernate (`ddl-auto=validate`) aceita o schema.
+
+## Autenticação e perfis
+
+1. Faça `POST /auth/login` com `{ "matricula": "...", "senha": "..." }`. A resposta traz o `token` (JWT, válido por 8 horas).
+2. Envie o token nas outras rotas no cabeçalho `Authorization: Bearer <token>`. No Swagger, clique em **Authorize** e cole
+   só o token.
+
+As senhas são guardadas com BCrypt (nunca em texto), e o token é assinado com a chave da variável `JWT_SECRET`.
+Num banco sem nenhum bibliotecário, a aplicação cria um na primeira subida: matrícula `admin`, senha `admin123`
+(variáveis `ADMIN_MATRICULA` e `ADMIN_SENHA`). Troque a senha em `PUT /auth/senha`.
+
+| O que | Sem login | ALUNO | PROFESSOR | BIBLIOTECARIO |
+|---|---|---|---|---|
+| Consultar acervo (materiais, busca, categorias, autores, editoras), avaliações e conquistas | sim | sim | sim | sim |
+| Cadastrar, editar e excluir acervo | — | — | sim | sim |
+| Pegar emprestado, renovar, devolver e registrar a leitura | — | só os seus | só os seus | de qualquer aluno |
+| Ver empréstimos, leituras, perfil de leitor e recomendações | — | só os seus | de qualquer aluno | de qualquer aluno |
+| Avaliar um material | — | em seu nome | em seu nome | em seu nome |
+| Editar avaliação / excluir avaliação | — | a sua / a sua | a sua / a sua | a sua / qualquer uma |
+| Ranking | — | sim | sim | sim |
+| Cadastrar, editar e excluir usuários (e definir perfil e senha) | — | — | — | sim |
+| Excluir empréstimo e rodar a verificação de atrasados | — | — | — | sim |
+
+Sem token numa rota protegida, ou com token inválido ou expirado: **401**. Com token, mas sem permissão: **403**. Os dois
+no formato padrão de erro.
+
+| Método | Rota | Erros possíveis |
+|---|---|---|
+| POST | `/auth/login` | 400 (matrícula ou senha em branco), 401 (matrícula ou senha inválidas) |
+| GET | `/auth/eu` (dados de quem está logado) | 401 |
+| PUT | `/auth/senha` (`{ "senhaAtual", "novaSenha" }`) | 400 (senha atual incorreta), 401 |
 
 ## Rotas da API
 
@@ -284,11 +327,14 @@ O CNPJ é aceito com ou sem pontuação, validado pelos dígitos verificadores e
 
 | Método | Rota | Erros possíveis |
 |---|---|---|
-| POST | `/usuarios` | 400, 409 (e-mail ou matrícula repetidos) |
-| GET | `/usuarios` (ordenado por nome) | — |
-| GET | `/usuarios/{id}` | 404 |
-| PUT | `/usuarios/{id}` | 400, 404, 409 (e-mail ou matrícula repetidos) |
-| DELETE | `/usuarios/{id}` | 404, 409 (tem empréstimos) |
+| POST | `/usuarios` (só bibliotecário) | 400 (inclusive sem senha), 409 (e-mail ou matrícula repetidos) |
+| GET | `/usuarios` (ordenado por nome; professor e bibliotecário) | — |
+| GET | `/usuarios/{id}` (o próprio, professor ou bibliotecário) | 404 |
+| PUT | `/usuarios/{id}` (só bibliotecário) | 400, 404, 409 (e-mail ou matrícula repetidos) |
+| DELETE | `/usuarios/{id}` (só bibliotecário) | 404, 409 (tem empréstimos) |
+
+O corpo de POST e PUT aceita também `perfil` (`ALUNO`, `PROFESSOR` ou `BIBLIOTECARIO`; padrão `ALUNO`) e `senha`
+(de 6 a 72 caracteres; obrigatória no cadastro e opcional na edição). A resposta nunca traz a senha.
 
 **Empréstimos** (Pessoa 3)
 
@@ -354,6 +400,8 @@ Os demais erros também seguem o mesmo formato:
 | Status | Quando |
 |---|---|
 | 400 | Parâmetro da URL fora do permitido (ex.: `/materiais/busca?tamanho=500`); `campos` diz qual parâmetro e por quê |
+| 401 | Rota protegida sem token, token inválido ou expirado, ou login com matrícula ou senha erradas |
+| 403 | Token válido, mas o perfil não permite a ação (ex.: aluno vendo o empréstimo de outro) |
 | 404 | Rota que não existe (ex.: `GET /materiaisss`) |
 | 405 | Rota existe, mas não com esse método (ex.: `PATCH /categorias/1`); a mensagem lista os métodos aceitos |
 | 415 | Corpo enviado em outro formato que não `application/json` |
@@ -370,6 +418,7 @@ biblioteca-virtual-api/
 │   ├── exception/     # Exceções de negócio e GlobalExceptionHandler
 │   ├── model/         # Entidades JPA e enums
 │   ├── repository/    # Interfaces Spring Data JPA
+│   ├── seguranca/     # Token JWT, usuário logado e regras de acesso por dono do recurso
 │   ├── service/       # Regras de negócio
 │   └── validacao/     # Anotações de validação próprias (ex.: @AnoNaoFuturo)
 ├── src/main/resources/
@@ -393,7 +442,7 @@ biblioteca-virtual-api/
 | `V10+` | Pessoa 1 |
 | `V20+` | Pessoa 2 |
 | `V30+` | Pessoa 3 |
-| `V40+` | Funcionalidades novas que dependem de Usuário/Empréstimo (Pessoa 2: avaliações e progresso de leitura) |
+| `V40+` | Funcionalidades novas que dependem de Usuário/Empréstimo (Pessoa 2: avaliações, progresso de leitura e, na `V42`, perfil e senha do usuário) |
 
 - Uma migration com chave estrangeira precisa de número maior que a da tabela referenciada: num banco zerado o Flyway
   aplica em ordem de versão. Por isso `avaliacoes` (`V40`) e `progressos_leitura` (`V41`), que dependem de `usuarios`
@@ -419,6 +468,8 @@ biblioteca-virtual-api/
 | Pessoa 3 | Bárbara Tavares | [@barbarattavares](https://github.com/barbarattavares) | CRUD de Empréstimo, devolução e regras RN01–RN05, integração com Usuário, seed de dados e README final |
 
 ## Documentação
+
+- **[Guia do projeto](docs/GUIA.md): passo a passo para rodar, como cada parte funciona e roteiro da demonstração**
 
 - [Requisitos](docs/REQUISITOS.md)
 - [Roadmap](docs/ROADMAP.md)
