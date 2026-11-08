@@ -201,6 +201,7 @@ erDiagram
 | RF10 | Avaliar um material (nota e comentário), editar, listar, consultar e excluir avaliações; mostrar a média e o total de avaliações de cada material |
 | RF11 | Registrar a página em que o aluno parou num material emprestado e consultar o percentual lido, por empréstimo ou de todas as leituras em andamento do aluno |
 | RF12 | Mostrar o perfil de leitor do aluno (pontos, nível e conquistas) e um ranking de leitores |
+| RF13 | Entrar com matrícula e senha e trocar a própria senha; cada usuário tem um perfil (aluno, professor ou bibliotecário) |
 
 ## Regras de negócio
 
@@ -223,6 +224,11 @@ erDiagram
 | RN15 | Uma leitura só conta como concluída quando o progresso chega à última página, e cada material conta uma vez por aluno |
 | RN16 | Pontos: 10 por leitura concluída, 3 por devolução até a data prevista, 2 por avaliação e +1 se ela tiver comentário; ninguém perde pontos |
 | RN17 | O ranking mostra só alunos com pontos, com o nome abreviado; empatados ficam na mesma posição |
+| RN18 | A senha é guardada só como hash BCrypt; o login devolve um token JWT válido por 8 horas |
+| RN19 | Consultar o acervo e as avaliações é público; o resto exige login |
+| RN20 | Aluno e professor só pegam emprestado, devolvem e registram leitura em nome próprio; o bibliotecário age por qualquer aluno |
+| RN21 | Só professor e bibliotecário cadastram o acervo e consultam dados de outros alunos; só o bibliotecário gerencia usuários |
+| RN22 | Ninguém avalia em nome de outro; só o autor edita a avaliação, e o autor ou o bibliotecário a exclui |
 
 ## Requisitos não funcionais
 

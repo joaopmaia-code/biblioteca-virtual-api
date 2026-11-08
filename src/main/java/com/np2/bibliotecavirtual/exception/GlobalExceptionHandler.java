@@ -10,6 +10,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -45,6 +46,27 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(RegraNegocioException.class)
     public ResponseEntity<ErroResponseDTO> tratarRegraNegocio(RegraNegocioException ex) {
         return responder(ErroResponseDTO.de(HttpStatus.CONFLICT, ex.getMessage()));
+    }
+
+    /** Dado obrigatório ausente ou inválido que o Bean Validation não cobre → 400. */
+    @ExceptionHandler(RequisicaoInvalidaException.class)
+    public ResponseEntity<ErroResponseDTO> tratarRequisicaoInvalida(RequisicaoInvalidaException ex) {
+        return responder(ErroResponseDTO.de(HttpStatus.BAD_REQUEST, ex.getMessage()));
+    }
+
+    /** Matrícula ou senha erradas no login → 401. */
+    @ExceptionHandler(CredenciaisInvalidasException.class)
+    public ResponseEntity<ErroResponseDTO> tratarCredenciaisInvalidas(CredenciaisInvalidasException ex) {
+        return responder(ErroResponseDTO.de(HttpStatus.UNAUTHORIZED, ex.getMessage()));
+    }
+
+    /**
+     * Usuário entrou, mas não pode fazer esta ação (ex.: aluno pegando emprestado em nome de outro) → 403.
+     * As recusas por perfil na própria rota são respondidas pelo RespostasDeSeguranca, no mesmo formato.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErroResponseDTO> tratarAcessoNegado(AccessDeniedException ex) {
+        return responder(ErroResponseDTO.de(HttpStatus.FORBIDDEN, ex.getMessage()));
     }
 
     /**

@@ -5,6 +5,7 @@ import com.np2.bibliotecavirtual.dto.EmprestimoRequestDTO;
 import com.np2.bibliotecavirtual.dto.EmprestimoResponseDTO;
 import com.np2.bibliotecavirtual.dto.ErroResponseDTO;
 import com.np2.bibliotecavirtual.model.StatusEmprestimo;
+import com.np2.bibliotecavirtual.seguranca.UsuarioLogado;
 import com.np2.bibliotecavirtual.service.EmprestimoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -40,6 +41,7 @@ import java.util.Map;
 public class EmprestimoController {
 
     private final EmprestimoService emprestimoService;
+    private final UsuarioLogado usuarioLogado;
 
     @PostMapping
     @Operation(summary = "Registrar empréstimo",
@@ -56,6 +58,8 @@ public class EmprestimoController {
                     content = @Content(schema = @Schema(implementation = ErroResponseDTO.class)))
     })
     public ResponseEntity<EmprestimoResponseDTO> registrar(@Valid @RequestBody EmprestimoRequestDTO dto) {
+        // Aluno e professor só pegam emprestado em nome próprio; o bibliotecário registra para qualquer um (403).
+        usuarioLogado.garantirQueEhOProprioOuBibliotecario(dto.usuarioId());
         EmprestimoResponseDTO criado = emprestimoService.registrar(dto);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")

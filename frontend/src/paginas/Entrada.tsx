@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { api, mensagemDeErro } from '../api/cliente'
 import { Retorno } from '../componentes/Basicos'
 import { Logo } from '../componentes/Logo'
@@ -9,32 +9,26 @@ export function Entrada() {
   const { usuario, entrar } = useSessao()
   const navegar = useNavigate()
   const [matricula, setMatricula] = useState('')
+  const [senha, setSenha] = useState('')
   const [erro, setErro] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
 
   if (usuario) {
-    return <Navigate to="/inicio" replace />
+    return <Navigate to={usuario.perfil === 'BIBLIOTECARIO' ? '/equipe' : '/inicio'} replace />
   }
 
-  async function entrarComoAluno(evento: FormEvent) {
+  async function fazerLogin(evento: FormEvent) {
     evento.preventDefault()
-    const procurada = matricula.trim().toLowerCase()
-    if (!procurada) {
-      setErro('Digite a sua matrícula.')
+    if (!matricula.trim() || !senha) {
+      setErro('Preencha a matrícula e a senha.')
       return
     }
     setEnviando(true)
     setErro(null)
     try {
-      // A API não tem busca por matrícula nem login: procuramos na lista de usuários.
-      const usuarios = await api.usuarios()
-      const encontrado = usuarios.find((u) => u.matricula.toLowerCase() === procurada)
-      if (!encontrado) {
-        setErro('Matrícula não encontrada. Confira com a biblioteca se o seu cadastro existe.')
-        return
-      }
-      entrar(encontrado)
-      navegar('/inicio')
+      const resposta = await api.login(matricula.trim(), senha)
+      entrar(resposta.token, resposta.usuario)
+      navegar(resposta.usuario.perfil === 'BIBLIOTECARIO' ? '/equipe' : '/inicio')
     } catch (falha) {
       setErro(mensagemDeErro(falha))
     } finally {
@@ -67,9 +61,9 @@ export function Entrada() {
         <div className="entrada-caixa">
           <div>
             <h2>Entrar</h2>
-            <p className="texto-suave">Use a matrícula da escola.</p>
+            <p className="texto-suave">Alunos, professores e equipe da biblioteca entram com a matrícula da escola.</p>
           </div>
-          <form onSubmit={entrarComoAluno} className="pilha" noValidate>
+          <form onSubmit={fazerLogin} className="pilha" noValidate>
             <div className="campo">
               <label htmlFor="matricula">Matrícula</label>
               <input
@@ -78,22 +72,30 @@ export function Entrada() {
                 onChange={(e) => setMatricula(e.target.value)}
                 autoComplete="username"
                 aria-invalid={erro !== null}
-                aria-describedby={erro ? 'erro-matricula' : undefined}
+              />
+            </div>
+            <div className="campo">
+              <label htmlFor="senha">Senha</label>
+              <input
+                id="senha"
+                type="password"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                autoComplete="current-password"
+                aria-invalid={erro !== null}
+                aria-describedby={erro ? 'erro-login' : undefined}
               />
             </div>
             {erro && (
-              <div id="erro-matricula">
+              <div id="erro-login">
                 <Retorno tipo="erro">{erro}</Retorno>
               </div>
             )}
             <button type="submit" className="botao botao-primario botao-grande" disabled={enviando}>
-              {enviando ? 'Entrando…' : 'Entrar como aluno'}
+              {enviando ? 'Entrando…' : 'Entrar'}
             </button>
           </form>
-          <div className="divisor">ou</div>
-          <Link to="/equipe" className="botao botao-secundario botao-grande">
-            Sou da equipe da biblioteca
-          </Link>
+          <p className="texto-pequeno texto-suave">Esqueceu a senha? Procure a equipe da biblioteca.</p>
         </div>
       </section>
     </div>

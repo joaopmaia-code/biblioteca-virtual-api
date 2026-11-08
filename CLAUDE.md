@@ -36,8 +36,13 @@ Credenciais do banco vêm das variáveis `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_US
 | `service` | Regras de negócio; converte DTO ↔ entidade; lança exceções de negócio |
 | `controller` | `@RestController`; `@Valid` no corpo; define status HTTP; documentação Swagger |
 | `exception` | Exceções de negócio e `GlobalExceptionHandler` (`@RestControllerAdvice`) |
-| `config` | Configurações (ex.: `OpenApiConfig`) |
+| `config` | Configurações (ex.: `OpenApiConfig`, `SegurancaConfig`, seed `DadosDemo`) |
+| `seguranca` | Token JWT (`TokenService`), `UsuarioLogado` e `RegrasDeAcesso` (dono do recurso) |
 | `validacao` | Anotações de Bean Validation próprias (ex.: `@AnoNaoFuturo`) |
+
+Autenticação: login em `POST /auth/login` (matrícula + senha BCrypt) devolve um JWT; perfis `ALUNO`,
+`PROFESSOR` e `BIBLIOTECARIO`. As permissões por rota ficam todas no `SegurancaConfig`; rota nova precisa
+de uma regra lá (o padrão é exigir login).
 
 Regras:
 - Controller nunca acessa Repository direto e nunca recebe/devolve entidade; sempre DTO.

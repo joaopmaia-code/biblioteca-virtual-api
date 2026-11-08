@@ -382,3 +382,40 @@ real pegou.
 - **Por que o bug acontecia:** no MySQL (REPEATABLE READ), a transação "fotografa" o banco na primeira leitura.
   Ela lia o usuário antes de esperar a trava do material; depois da trava, contava as licenças na foto antiga.
   Com `READ_COMMITTED`, cada leitura vê o que já foi gravado, e a trava passa a proteger de verdade.
+
+---
+
+## Pessoa 2 — 08/11/2026: autenticação e perfis de acesso
+
+### Ferramenta
+
+- **Claude Code**, modelo **Claude Opus 5.5**, na extensão do VS Code. Commit e push ficam com o integrante.
+
+### Como o trabalho foi conduzido
+
+| Etapa | Integrante | IA |
+|---|---|---|
+| Escopo | Decidiu que o sistema precisava de autenticação e de um perfil para cada tipo de usuário (aluno, professor, bibliotecário), mesmo com a IA alertando para o risco de uma mudança grande no dia da entrega | Propôs o desenho (JWT, BCrypt, três perfis e a tabela de permissões) e fez numa branch separada, para só juntar depois de testar |
+| Código | Revisa antes do merge | Escreveu `SegurancaConfig`, `TokenService`, `UsuarioLogado`, `RegrasDeAcesso`, `RespostasDeSeguranca`, `AutenticacaoController/Service`, `BibliotecarioInicial`, a migration `V42` e o login no front; ajustou `Usuario`, `UsuarioService` e o seed |
+| Testes | Testa no Swagger e no front | `AutenticacaoServiceTest` e novos casos no `UsuarioServiceTest`; matriz de permissões contra o MySQL |
+
+### Como o resultado foi verificado
+
+| O quê | Resultado |
+|---|---|
+| Matriz de permissões (sem login, aluno, outro aluno, professor, bibliotecário) contra MySQL com o seed | 69 de 69 casos com o código esperado (200/201/204, 400, 401, 403, 404, 409) |
+| Front pelo proxy do Vite | Login, chamadas com token, 401 sem token e 403 para dados de outro aluno |
+| Swagger | Botão Authorize; login sem cadeado; 401 e 403 documentados nas rotas protegidas |
+| Projeto todo | `mvnw test`: 106 testes, 0 falhas; front com build e lint sem erros |
+
+### Decisões que o integrante precisa saber explicar
+
+- **JWT:** o login devolve um token assinado (HS256) com o ID e o perfil do usuário. O servidor não guarda sessão;
+  a cada requisição o Spring Security confere a assinatura e a validade. Quem altera o token invalida a assinatura.
+- **BCrypt:** a senha nunca é salva; salva-se um hash com "sal". No login, o `PasswordEncoder.matches` compara.
+- **Duas camadas de permissão:** por perfil (`hasRole`) e por dono do recurso (`RegrasDeAcesso` olha o `{id}` da
+  URL e o dono do empréstimo ou da avaliação). Quando a regra depende do corpo (o `usuarioId` de um novo
+  empréstimo ou avaliação), quem checa é o controller, com o `UsuarioLogado`.
+- **401 × 403:** 401 = não sei quem você é (sem token ou token inválido); 403 = sei quem você é, mas você não pode.
+- **Bibliotecário inicial:** só o bibliotecário cadastra usuários; sem um primeiro bibliotecário ninguém entraria,
+  então a aplicação cria um (`admin`/`admin123`) quando não existe nenhum.

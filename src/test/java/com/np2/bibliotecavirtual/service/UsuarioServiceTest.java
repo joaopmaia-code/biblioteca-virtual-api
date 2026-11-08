@@ -4,14 +4,20 @@ import com.np2.bibliotecavirtual.dto.UsuarioRequestDTO;
 import com.np2.bibliotecavirtual.dto.UsuarioResponseDTO;
 import com.np2.bibliotecavirtual.exception.RecursoNaoEncontradoException;
 import com.np2.bibliotecavirtual.exception.RegraNegocioException;
+import com.np2.bibliotecavirtual.exception.RequisicaoInvalidaException;
+import com.np2.bibliotecavirtual.model.PerfilUsuario;
 import com.np2.bibliotecavirtual.model.Usuario;
 import com.np2.bibliotecavirtual.repository.EmprestimoRepository;
 import com.np2.bibliotecavirtual.repository.UsuarioRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
 
@@ -34,10 +40,53 @@ class UsuarioServiceTest {
     @Mock
     private EmprestimoRepository emprestimoRepository;
 
+    /** BCrypt de verdade, com custo baixo para o teste ser rápido. */
+    @Spy
+    private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(4);
+
     @InjectMocks
     private UsuarioService usuarioService;
 
-    private final UsuarioRequestDTO dto = new UsuarioRequestDTO("  Ana Souza ", " Ana@Escola.edu.br ", " 2026001 ");
+    private final UsuarioRequestDTO dto = new UsuarioRequestDTO("  Ana Souza ", " Ana@Escola.edu.br ", " 2026001 ",
+            null, "senha123");
+
+    @Test
+    void cadastrarGuardaASenhaCriptografadaEPerfilAlunoPorPadrao() {
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(invocacao -> invocacao.getArgument(0));
+
+        usuarioService.cadastrar(dto);
+
+        ArgumentCaptor<Usuario> salvo = ArgumentCaptor.forClass(Usuario.class);
+        verify(usuarioRepository).save(salvo.capture());
+        assertThat(salvo.getValue().getPerfil()).isEqualTo(PerfilUsuario.ALUNO);
+        assertThat(salvo.getValue().getSenhaHash()).isNotEqualTo("senha123").startsWith("$2");
+        assertThat(passwordEncoder.matches("senha123", salvo.getValue().getSenhaHash())).isTrue();
+    }
+
+    @Test
+    void cadastrarSemSenhaLancaRequisicaoInvalida() {
+        UsuarioRequestDTO semSenha = new UsuarioRequestDTO("Ana", "ana@escola.edu.br", "2026001", null, null);
+
+        assertThatThrownBy(() -> usuarioService.cadastrar(semSenha))
+                .isInstanceOf(RequisicaoInvalidaException.class)
+                .hasMessage("A senha é obrigatória no cadastro");
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    void atualizarSemSenhaNemPerfilMantemOsAtuais() {
+        Usuario existente = new Usuario();
+        existente.setId(1L);
+        existente.setPerfil(PerfilUsuario.PROFESSOR);
+        existente.setSenhaHash("hash-antigo");
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(existente));
+        when(usuarioRepository.save(existente)).thenReturn(existente);
+
+        usuarioService.atualizar(1L, new UsuarioRequestDTO("Ana", "ana@escola.edu.br", "2026001", null, null));
+
+        assertThat(existente.getPerfil()).isEqualTo(PerfilUsuario.PROFESSOR);
+        assertThat(existente.getSenhaHash()).isEqualTo("hash-antigo");
+    }
 
     @Test
     void cadastrarGuardaEmailEmMinusculasESemEspacos() {

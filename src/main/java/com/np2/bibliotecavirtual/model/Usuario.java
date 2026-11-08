@@ -2,6 +2,8 @@ package com.np2.bibliotecavirtual.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -11,7 +13,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * Aluno que pega materiais emprestados e entra na fila de espera.
+ * Usuário da biblioteca: aluno, professor ou bibliotecário (perfil), que entra com matrícula e senha.
  * Usuário das aulas, reaproveitado (não conta como um dos 5 CRUDs).
  */
 @Entity
@@ -34,4 +36,13 @@ public class Usuario {
 
     @Column(nullable = false, unique = true, length = 30)
     private String matricula;
+
+    /** Perfil de acesso (V42). */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private PerfilUsuario perfil = PerfilUsuario.ALUNO;
+
+    /** Senha criptografada com BCrypt (V42). Nunca sai da API. */
+    @Column(name = "senha_hash", length = 100)
+    private String senhaHash;
 }

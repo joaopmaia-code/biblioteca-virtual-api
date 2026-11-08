@@ -2,11 +2,16 @@ import { createContext, useContext } from 'react'
 import type { PerfilLeitor, Usuario } from '../api/tipos'
 
 export interface Sessao {
-  /** Aluno que entrou pela matrícula (null antes de entrar). */
+  /** Usuário que entrou com matrícula e senha (null antes de entrar). */
   usuario: Usuario | null
-  /** Pontos, nível e conquistas do aluno (null enquanto carrega). */
+  /** Pontos, nível e conquistas do usuário (null enquanto carrega). */
   perfil: PerfilLeitor | null
-  entrar: (usuario: Usuario) => void
+  /** Professor ou bibliotecário: pode abrir o painel da equipe. */
+  ehEquipe: boolean
+  /** Só o bibliotecário registra, renova e devolve empréstimos de outros alunos. */
+  ehBibliotecario: boolean
+  /** Guarda o token e o usuário devolvidos por POST /auth/login. */
+  entrar: (token: string, usuario: Usuario) => void
   sair: () => void
   /** Busca o perfil de novo depois de uma ação que muda os pontos (devolver, avaliar, ler). */
   recarregarPerfil: () => void
