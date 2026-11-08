@@ -1,6 +1,7 @@
 package com.np2.bibliotecavirtual.exception;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import static org.hamcrest.Matchers.hasSize;
@@ -106,6 +108,17 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void parametroDaUrlForaDoLimiteRetorna400IndicandoOParametro() throws Exception {
+        mockMvc.perform(get("/teste/pagina").param("tamanho", "500"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.mensagem").value("Existem parâmetros inválidos na requisição"))
+                .andExpect(jsonPath("$.campos", hasSize(1)))
+                .andExpect(jsonPath("$.campos[0].campo").value("tamanho"))
+                .andExpect(jsonPath("$.campos[0].mensagem").value("O tamanho da página deve ser no máximo 50"));
+    }
+
+    @Test
     void rotaInexistenteRetorna404NoFormatoPadrao() throws Exception {
         mockMvc.perform(get("/teste/rota-que-nao-existe"))
                 .andExpect(status().isNotFound())
@@ -175,6 +188,10 @@ class GlobalExceptionHandlerTest {
 
         @GetMapping("/teste/id/{id}")
         void porId(@PathVariable Long id) {
+        }
+
+        @GetMapping("/teste/pagina")
+        void pagina(@RequestParam @Max(value = 50, message = "O tamanho da página deve ser no máximo 50") int tamanho) {
         }
     }
 }

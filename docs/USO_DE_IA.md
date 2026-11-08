@@ -217,3 +217,76 @@ Observação: e-mail com espaços nas pontas é recusado pelo `@Email` (400) ant
 | Recomendação | `RecomendacaoServiceTest` e chamada à rota | Ordem e motivo corretos; lista vazia sem histórico; 404 para usuário inexistente |
 | Ambiente | Subida da aplicação no MySQL do Docker (porta 3308) | Migrations V10 a V31 aplicadas; `ddl-auto=validate` sem erro; Swagger abre |
 | Projeto todo | `mvnw test` | 73 testes, 0 falhas |
+
+---
+
+## Pessoa 2 — 08/11/2026: busca no acervo, avaliações, progresso de leitura e gamificação
+
+### Ferramenta
+
+- **Claude Code**, modelo **Claude Opus 5.5**, na extensão do VS Code, usado como assistente de programação
+  numa conversa ao longo do dia. Commits e push ficam com o integrante, depois de revisar os arquivos.
+
+### Como o trabalho foi conduzido
+
+O trabalho foi feito em conjunto, com o integrante conduzindo e a IA auxiliando:
+
+- **O integrante** levantou o problema: numa biblioteca digital, só o empréstimo deixava a API pobre. Decidiu
+  manter o empréstimo (é um dos 5 CRUDs e, no acervo digital, representa o empréstimo de uma licença), escolheu
+  as funcionalidades novas entre as opções discutidas (busca, avaliações e progresso de leitura) e, depois,
+  propôs a gamificação e aprovou o desenho dela. Também definiu que nada seria commitado antes da revisão dele.
+- **A IA** propôs opções de desenho (rotas, regras, tabelas, pontuação e conquistas), apontou riscos
+  (ordem das migrations, alterar código de outra pessoa, trapaça no progresso, privacidade no ranking),
+  escreveu a primeira versão do código e dos testes a partir das decisões do integrante e rodou as verificações.
+
+| Etapa | Integrante | IA |
+|---|---|---|
+| Escopo | Definiu o problema, escolheu as 4 funcionalidades e manteve o empréstimo | Sugeriu opções e explicou os prós e contras de cada uma |
+| Desenho | Aprovou rotas, regras (RN10–RN17), pontos, níveis e conquistas | Propôs o desenho e alertou para os limites (ranking sem turma, progresso informado pelo aluno) |
+| Código | Revisa cada arquivo antes do commit | Escreveu migrations `V40`/`V41`, entidades, DTOs, repositories, services, controllers e o tratamento de parâmetro inválido no `GlobalExceptionHandler` |
+| Testes | Testa os fluxos no Swagger | Escreveu `AvaliacaoServiceTest`, `ProgressoLeituraServiceTest`, `GamificacaoServiceTest` e um teste no `GlobalExceptionHandlerTest`; rodou os testes de ponta a ponta |
+| Documentação | Revisa | Atualizou README, REQUISITOS, ROADMAP, `CLAUDE.md` e rascunhou este registro |
+
+### Como o resultado foi verificado
+
+| O quê | Como | Resultado |
+|---|---|---|
+| Testes automatizados | `mvnw test` com MySQL 8.4 | 99 testes, 0 falhas |
+| Migrations | Aplicação subindo num MySQL 8.4 **vazio** (container descartável) | V10 a V41 aplicadas em ordem; `ddl-auto=validate` sem erro |
+| Avaliações | `curl` contra a aplicação rodando | 201 ao avaliar; 409 sem ter pegado o material e ao avaliar de novo; 400 com nota 7; média e total aparecem em `GET /materiais/{id}` |
+| Busca | `curl` com cada filtro e combinações | Filtros por título, autor (sem duplicar material de 2 autores), série + tipo, ano, nota mínima e disponibilidade corretos; 400 com `tamanho=500`, `notaMinima=9` e `tipo=REVISTA` |
+| Progresso | `curl` | Página 0 antes de registrar; 46.9% na página 120 de 256; `concluido` na última; 409 com página acima do total, vídeo sem páginas e empréstimo devolvido; 400 com página 0 |
+| Gamificação | `curl` num banco vazio, com um roteiro de empréstimos, leituras e avaliações | Pontos, nível e conquistas batendo com a conta feita à mão; releitura do mesmo material não pontua de novo; leitura pela metade não conta; ranking sem quem tem 0 ponto; excluir um empréstimo tira os pontos dele |
+| Cascatas e regressão | `curl` | Excluir empréstimo apaga o progresso; listagem de materiais, recomendação e cadastro de material sem mudança de comportamento |
+| Swagger | `/v3/api-docs` | Todas as rotas novas documentadas |
+
+**Problema encontrado no teste com banco:** a ordenação da busca por avaliação dava erro 500, porque o
+Spring Data não aplica `nullsLast()` em consultas Criteria. A opção foi removida; no MySQL, em ordem
+decrescente, o `NULL` já fica por último. Os testes com Mockito não pegavam esse erro; só o teste com MySQL
+real pegou.
+
+### Decisões que o integrante precisa saber explicar
+
+- **Por que manter o empréstimo:** no acervo digital ele é o empréstimo de uma licença (`quantidadeLicencas`);
+  cada material agora mostra `licencasDisponiveis`.
+- **`@Formula` no Material:** média, total de avaliações e licenças em uso são subconsultas que o Hibernate
+  põe no mesmo `SELECT` do material. Não são colunas (não há valor duplicado para manter em dia) e podem ser
+  usadas no filtro e na ordenação da busca. Num material recém-cadastrado vêm `null`, e o DTO trata isso.
+- **`Specification` na busca:** cada filtro informado vira uma condição; os que vêm `null` são ignorados. O
+  filtro por autor usa subconsulta (`exists`) em vez de `join`, para um material com 2 autores não aparecer
+  2 vezes na página.
+- **Autores fora do `@EntityGraph` da busca:** buscar uma coleção junto com paginação faz o Hibernate paginar
+  em memória; com `@BatchSize`, os autores da página vêm numa consulta só.
+- **Migrations `V40+`:** chave estrangeira para `usuarios`/`emprestimos` exige número maior que `V31`, senão o
+  Flyway aplica antes, num banco zerado, e falha.
+- **Progresso em tabela própria (1:1 com o empréstimo):** evita mexer na entidade da Pessoa 3; o controller
+  novo usa a rota `/emprestimos/{id}/progresso` sem alterar o `EmprestimoController`.
+- **`ON DELETE CASCADE`:** avaliações saem junto com o material ou o usuário; o progresso sai junto com o
+  empréstimo.
+- **Gamificação calculada, sem tabela:** pontos e conquistas saem do histórico a cada consulta, então nunca
+  ficam desatualizados e o código de Empréstimo não precisou mudar. A contrapartida é não guardar a data em
+  que cada conquista foi desbloqueada.
+- **Cada material conta uma vez (RN15):** como o aluno informa o próprio progresso, isso impede acumular
+  pontos relendo o mesmo material. Exigir um tempo mínimo de leitura seria o próximo passo.
+- **Ranking com nome abreviado e sem quem tem 0 ponto:** são alunos de ensino médio; o ranking é geral porque
+  o `Usuario` não tem turma.

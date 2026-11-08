@@ -77,6 +77,11 @@ Regras:
 | `V10+` | Pessoa 1 (Autor, Editora, Reserva) |
 | `V20+` | Pessoa 2 (Categoria, Material, `material_autor`) |
 | `V30+` | Pessoa 3 (Empréstimo, Usuário) |
+| `V40+` | Funcionalidades novas que dependem de Usuário/Empréstimo (Pessoa 2: Avaliação, Progresso de leitura) |
+
+Uma migration com chave estrangeira precisa de número **maior** que a da tabela referenciada:
+num banco zerado o Flyway aplica em ordem de versão, então uma `V2x` que referencie `usuarios`
+(`V30`) quebraria. Por isso as tabelas que dependem de Usuário/Empréstimo ficam na `V40+`.
 
 - `spring.flyway.out-of-order=true` permite aplicar uma migration de número menor que
   chegue na `main` depois de uma maior.

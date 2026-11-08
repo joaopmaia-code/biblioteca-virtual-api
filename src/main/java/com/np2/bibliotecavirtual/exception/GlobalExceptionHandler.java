@@ -16,6 +16,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -66,6 +67,22 @@ public class GlobalExceptionHandler {
                 .toList();
 
         return responder(ErroResponseDTO.de(HttpStatus.BAD_REQUEST, "Existem campos inválidos na requisição", campos));
+    }
+
+    /**
+     * Falha na validação de um parâmetro da URL (ex.: @Max(50) em ?tamanho=500) → 400 com a
+     * mensagem de cada parâmetro.
+     */
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ErroResponseDTO> tratarValidacaoParametros(HandlerMethodValidationException ex) {
+        List<CampoErroDTO> campos = ex.getParameterValidationResults().stream()
+                .flatMap(resultado -> resultado.getResolvableErrors().stream()
+                        .map(erro -> new CampoErroDTO(resultado.getMethodParameter().getParameterName(),
+                                erro.getDefaultMessage())))
+                .sorted(Comparator.comparing(CampoErroDTO::campo))
+                .toList();
+
+        return responder(ErroResponseDTO.de(HttpStatus.BAD_REQUEST, "Existem parâmetros inválidos na requisição", campos));
     }
 
     /** JSON mal formatado ou valor que não existe no enum → 400. */
