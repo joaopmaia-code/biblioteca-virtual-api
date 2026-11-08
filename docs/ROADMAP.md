@@ -149,13 +149,14 @@ Para a API se parecer mais com uma biblioteca digital. Detalhes em
 ## O que falta
 
 ### Código
-- [ ] Tirar as referências à fila de espera que sobraram no código de Empréstimo e Usuário:
-  - `EmprestimoService`: a mensagem de erro de RN01 manda o aluno "entrar na fila de espera", que não existe;
+- [x] Mensagem de erro da RN01 não manda mais o aluno "entrar na fila de espera" (08/11)
+- [ ] Tirar as referências à fila de espera que sobraram em comentários (Pessoa 3):
   - `EmprestimoService` e `EmprestimoRegras`: comentários e o método `podeReceber` falam da fila, de RN11 e da Reserva;
   - `Usuario`: o Javadoc diz que o aluno "entra na fila de espera".
-- [ ] Seed de dados para a demo não começar com o banco vazio: categorias, editoras, autores, materiais,
-  usuários, empréstimos e agora também avaliações e progresso. Precisa ser uma migration depois da `V41`
-  (ex.: `V42__seed.sql`), porque usa todas as tabelas.
+- [x] Seed de dados para a demo (perfil `demo`, `config/DadosDemo.java`): livros reais do Project Gutenberg,
+  alunos, empréstimos, progresso e avaliações, com datas relativas a hoje (08/11).
+- [x] RN01 sob concorrência: dois pedidos simultâneos pela última licença eram aceitos; corrigido com
+  `READ_COMMITTED` no `EmprestimoService.registrar` (08/11, avisar a Pessoa 3).
 
 ### Documentação
 - [ ] `SPRINTS.md`: preencher as entregas e dificuldades da Pessoa 3 nas três sprints e a linha dela no resumo
