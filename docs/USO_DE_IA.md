@@ -419,3 +419,17 @@ real pegou.
 - **401 × 403:** 401 = não sei quem você é (sem token ou token inválido); 403 = sei quem você é, mas você não pode.
 - **Bibliotecário inicial:** só o bibliotecário cadastra usuários; sem um primeiro bibliotecário ninguém entraria,
   então a aplicação cria um (`admin`/`admin123`) quando não existe nenhum.
+
+---
+
+## Pessoa 2 — 08/11/2026: capas dos livros
+
+| Etapa | Integrante | IA |
+|---|---|---|
+| Ideia | Perguntou se o seed tinha as fotos dos livros e decidiu incluir as capas | Verificou que o Gutenberg tem capa para os 16 livros (folhas de rosto escaneadas das edições originais) |
+| Código | Revisa e faz o commit | Migration `V43` (`url_capa`), campo no Material e nos DTOs, capas no seed e imagem no front com o bloco colorido como reserva |
+| Verificação | Testa no front | 16 de 16 capas abrem; URL de capa inválida dá 400; material sem capa funciona; `mvnw test`: 107 testes, 0 falhas |
+
+**Problema encontrado no teste:** o seed salvava cada livro duas vezes, e na segunda o Hibernate tentava alterar a lista
+de autores, que era imutável (`Set.of`). A aplicação não subia. Corrigido salvando cada material uma vez só e usando
+uma lista mutável (`HashSet`).

@@ -33,6 +33,10 @@ public record MaterialResponseDTO(
         @Schema(example = "https://acervo.escola.edu.br/livros/dom-casmurro.pdf")
         String urlArquivo,
 
+        @Schema(description = "Imagem de capa (null quando o material não tem)",
+                example = "https://www.gutenberg.org/cache/epub/55752/pg55752.cover.medium.jpg")
+        String urlCapa,
+
         @Schema(example = "256")
         Integer numeroPaginas,
 
@@ -71,6 +75,7 @@ public record MaterialResponseDTO(
                 material.getAnoPublicacao(),
                 material.getSinopse(),
                 material.getUrlArquivo(),
+                material.getUrlCapa(),
                 material.getNumeroPaginas(),
                 material.getQuantidadeLicencas(),
                 material.getQuantidadeLicencas() == null ? null

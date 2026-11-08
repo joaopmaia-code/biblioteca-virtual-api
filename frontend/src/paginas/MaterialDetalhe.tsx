@@ -79,7 +79,13 @@ export function MaterialDetalhe() {
       </nav>
 
       <section className="colunas detalhe">
-        <Capa id={m.id} titulo={m.titulo} rotulo={m.autores.map((a) => a.nome).join(', ').toUpperCase()} grande />
+        <Capa
+          id={m.id}
+          titulo={m.titulo}
+          urlCapa={m.urlCapa}
+          rotulo={m.urlCapa ? undefined : m.autores.map((a) => a.nome).join(', ').toUpperCase()}
+          grande
+        />
 
         <div className="coluna-principal pilha">
           <div className="pilha pilha-justa">

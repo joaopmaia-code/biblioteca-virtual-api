@@ -148,7 +148,7 @@ function CartaoLeitura({ leitura, onMudou }: { leitura: ProgressoLeitura; onMudo
 
   return (
     <article className="cartao cartao-leitura">
-      <Capa id={leitura.material.id} titulo={leitura.material.nome} />
+      <Capa id={leitura.material.id} titulo={leitura.material.nome} urlCapa={leitura.urlCapa} />
       <div className="pilha crescer">
         <div className="linha-entre">
           <Link to={`/materiais/${leitura.material.id}`} className="titulo-cartao titulo-cartao-grande">

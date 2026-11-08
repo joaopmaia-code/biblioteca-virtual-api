@@ -65,6 +65,12 @@ public record MaterialRequestDTO(
         @ArraySchema(arraySchema = @Schema(description = "IDs dos autores (pelo menos um)"),
                 schema = @Schema(example = "1"))
         @NotEmpty(message = "Informe pelo menos um autor")
-        List<@NotNull(message = "O ID do autor não pode ser nulo") Long> autoresIds
+        List<@NotNull(message = "O ID do autor não pode ser nulo") Long> autoresIds,
+
+        @Schema(description = "URL da imagem de capa (opcional)",
+                example = "https://www.gutenberg.org/cache/epub/55752/pg55752.cover.medium.jpg")
+        @URL(message = "A URL da capa deve ser uma URL válida")
+        @Size(max = 500, message = "A URL da capa deve ter no máximo 500 caracteres")
+        String urlCapa
 ) {
 }

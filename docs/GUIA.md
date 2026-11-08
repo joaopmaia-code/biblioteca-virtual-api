@@ -211,6 +211,7 @@ Toda falha volta como `{ timestamp, status, erro, mensagem, campos }`. Quem mont
 | V30, V31 | `usuarios`, `emprestimos` |
 | V40, V41 | `avaliacoes`, `progressos_leitura` |
 | V42 | `perfil` e `senha_hash` em `usuarios` |
+| V43 | `url_capa` em `materiais` (imagem de capa, opcional) |
 
 ---
 
@@ -285,7 +286,8 @@ Maratonista, Explorador, Crítico, Pontual, Clássico. Rotas: `GET /usuarios/{id
 ### 6.8. Dados de demonstração (seed)
 
 `config/DadosDemo.java`, só com o perfil `demo` e o banco vazio. Os 16 livros são clássicos em domínio público do
-Project Gutenberg (obtidos pela API Gutendex), com o link real de leitura; as páginas vieram do Open Library. As datas
+Project Gutenberg (obtidos pela API Gutendex), com o link real de leitura e a **capa** (a folha de rosto escaneada da
+edição original, carregada do site do Gutenberg); as páginas vieram do Open Library. As datas
 são relativas a hoje, então sempre há empréstimos ativos, atrasados e um histórico com avaliações e conquistas.
 
 ---
@@ -351,6 +353,8 @@ usuário troca a própria senha em `PUT /auth/senha`. A chave que assina os toke
 - **Áreas:** o aluno usa a área do leitor (Início, Acervo, Minhas leituras, Ranking, Perfil de leitor). O professor vê
   também o painel da equipe, só para consulta. O bibliotecário entra direto no painel e registra, renova e devolve
   empréstimos.
+- **Capas:** materiais com `urlCapa` mostram a imagem; sem capa, ou se a imagem não carregar (ex.: sem internet na
+  apresentação), aparece um bloco colorido com o título, sem quebrar a tela.
 - Esconder botões no front é só conforto: quem garante as permissões é a API.
 - **Organização:** `api/` (uma função por rota), `sessao/` (usuário logado e pontos), `hooks/useCarregar` (chama a
   API e guarda dados, erro e "carregando"), `paginas/` (uma tela por arquivo), `componentes/` (cabeçalho, abas, capa,
@@ -386,7 +390,7 @@ Antes: banco zerado e API com o perfil `demo` (passo 2.3). Pelo Swagger (passo 4
 mvnw.cmd test        # precisa do MySQL rodando (docker compose up -d)
 ```
 
-São 106 testes. Os de service usam Mockito (sem banco) e cobrem as regras de negócio, login e senha; o
+São 107 testes. Os de service usam Mockito (sem banco) e cobrem as regras de negócio, login e senha; o
 `BibliotecaVirtualApplicationTests` sobe a aplicação inteira e confirma que as migrations rodam e que o Hibernate aceita
 o schema. No front: `npm run build` (confere os tipos) e `npm run lint`.
 

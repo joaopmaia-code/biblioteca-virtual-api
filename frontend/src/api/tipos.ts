@@ -24,6 +24,7 @@ export interface Material {
   anoPublicacao: number
   sinopse: string | null
   urlArquivo: string
+  urlCapa: string | null
   numeroPaginas: number | null
   quantidadeLicencas: number
   licencasDisponiveis: number
@@ -82,6 +83,7 @@ export interface ProgressoLeitura {
   emprestimoId: number
   usuario: Resumo
   material: Resumo
+  urlCapa: string | null
   statusEmprestimo: StatusEmprestimo
   dataPrevistaDevolucao: string
   paginaAtual: number

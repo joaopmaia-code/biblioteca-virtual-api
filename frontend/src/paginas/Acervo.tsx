@@ -183,7 +183,12 @@ export function Acervo() {
             <div className={resultado.carregando ? 'grade-cartoes atualizando' : 'grade-cartoes'}>
               {pagina?.conteudo.map((material) => (
                 <Link key={material.id} to={`/materiais/${material.id}`} className="cartao cartao-material">
-                  <Capa id={material.id} titulo={material.titulo} rotulo={ROTULO_TIPO[material.tipo].toUpperCase()} />
+                  <Capa
+                    id={material.id}
+                    titulo={material.titulo}
+                    urlCapa={material.urlCapa}
+                    rotulo={ROTULO_TIPO[material.tipo].toUpperCase()}
+                  />
                   <div>
                     <div className="titulo-cartao">{material.titulo}</div>
                     <div className="texto-suave texto-pequeno">
