@@ -33,8 +33,8 @@ commits relevantes e conseguir explicar o fluxo de ponta a ponta.
 ### Situação em 08/11
 
 Na `main`: os 5 CRUDs (Material, Autor, Editora, Categoria, Empréstimo), Usuário, regras RN01–RN09,
-tratamento de erros padronizado e a recomendação personalizada (PRs #1 a #11). Na `joao-dev`, ainda sem
-commit: busca no acervo, avaliações, progresso de leitura e gamificação (RN10–RN17). Pendências na seção
+tratamento de erros padronizado e a recomendação personalizada (PRs #1 a #11), mais busca no acervo,
+avaliações, progresso de leitura e gamificação (RN10–RN17, PR #12). O front-end está na branch `feature/front`. Pendências na seção
 [O que falta](#o-que-falta).
 
 ---
@@ -133,9 +133,16 @@ Para a API se parecer mais com uma biblioteca digital. Detalhes em
 - [x] Licenças disponíveis em cada material
 - [x] Gamificação: perfil de leitor, níveis, conquistas e ranking (RF12, RN15–RN17)
 - [x] Testes (99 no total) e teste de ponta a ponta num MySQL vazio
-- [ ] Commit, PR e merge na `main`
+- [x] Commit, PR e merge na `main` (PR #12, 08/11)
 - [ ] Avisar o grupo: faixa nova de migrations `V40+` e rotas novas sob `/emprestimos` e `/usuarios`
 - [ ] Alinhar com o professor (a funcionalidade extra oficial continua sendo a recomendação)
+
+### Front-end (branch `feature/front`, opcional)
+- [x] Telas desenhadas (entrada, início, acervo, material, leituras, perfil, ranking, painel da equipe)
+- [x] Projeto React + Vite + TypeScript em `frontend/`, com proxy `/api` para o Spring
+- [x] Fluxo do aluno e painel de empréstimos da equipe ligados à API
+- [ ] Testar no navegador, commit, PR e merge
+- [ ] Avisar o grupo e checar com o professor se o front entra na apresentação
 
 ---
 
